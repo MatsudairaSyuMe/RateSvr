@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<boards>
+		<board>
+			<brno>984</brno>
+			<id>1</id>
+			<ip>10.24.1.98</ip>
+			<port>1024</port>
+			<enable>1</enable>
+			<status>0</status>
+			<start description="掛牌啟用時間(時分)">0800</start>
+			<stop description="掛牌結束時間(時分)">1700</stop>
+		</board>
+		<board>
+			<brno>983</brno>
+			<id>2</id>
+			<ip>127.0.0.1</ip>
+			<port>1024</port>
+			<enable>1</enable>
+			<status>0</status>
+			<start>0800</start>
+			<stop>1700</stop>
+		</board>
+		<board>
+			<brno>981</brno>
+			<id>3</id>
+			<ip>10.24.1.231</ip>
+			<port>1024</port>
+			<enable>1</enable>
+			<status>0</status>
+			<start>0800</start>
+			<stop>1700</stop>
+		</board>
+	</boards>
+	<system>
+		<ip>10.24.1.231</ip>
+		<port>12000</port>
+		<logpath>/home/scotthong/tmp</logpath>
+		<user>scotthong</user>
+	</system>
+	<svrsubport>
+		<svrip>10.24.1.231</svrip>
+		<svrport>15000</svrport>
+		<localip>10.24.1.231</localip>
+		<localport>15010</localport>
+		<verhbrno>984</verhbrno>
+		<verhwsno>80</verhwsno>
+	</svrsubport>
+</configuration>
