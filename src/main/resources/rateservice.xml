@@ -33,15 +33,15 @@
 		</board>
 	</boards>
 	<system>
-		<ip>10.24.1.231</ip>
+		<ip>10.24.1.230</ip>
 		<port>12000</port>
 		<logpath>/home/scotthong/tmp</logpath>
 		<user>scotthong</user>
 	</system>
 	<svrsubport>
-		<svrip>10.24.1.231</svrip>
+		<svrip>10.24.1.230</svrip>
 		<svrport>15000</svrport>
-		<localip>10.24.1.231</localip>
+		<localip>10.24.1.230</localip>
 		<localport>15010</localport>
 		<verhbrno>984</verhbrno>
 		<verhwsno>80</verhwsno>
