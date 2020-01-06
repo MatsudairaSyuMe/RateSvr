@@ -29,7 +29,7 @@ public class Constants {
 	public static final String DEF_SERVER_ADDRESS = "0.0.0.0";
 	public static final int DEF_CHANNEL_NO_MIN = 11;
 	public static final int DEF_CHANNEL_NO_MAX = 12;
-	public static final int DEF_CHANNEL_BUFFER_SIZE = 3072;
+	public static final int DEF_CHANNEL_BUFFER_SIZE = 8192;
 
 	public static String SCRIPT_NAME = "TelecomCfg.java";
 	public static String SCRIPT_FUNC = "getConfig()";

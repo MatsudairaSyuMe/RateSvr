@@ -569,25 +569,24 @@ public class S004 {
 				this.RateRecList.add(sndStr);
 				log.debug("pre len={} sndStr=[{}]", sndStr.length(), sndStr);
 			}
-//			int decimalno1 = getDecimal(getSrats(idx));
-//			int decimalno2 = getDecimal(getBrats(idx));
-//			int decimalno3 = getDecimal(getScash(idx));
-//			int decimalno4 = getDecimal(getBcash(idx));
-			int decimalno1 = getDecimal(getBrats(idx));
-			int decimalno2 = getDecimal(getBcash(idx));
-			int decimalno3 = getDecimal(getSrats(idx));
-			int decimalno4 = getDecimal(getScash(idx));
+//			int decimalno1 = getDecimal(getBrats(idx));
+//			int decimalno2 = getDecimal(getBcash(idx));
+//			int decimalno3 = getDecimal(getSrats(idx));
+//			int decimalno4 = getDecimal(getScash(idx));
+			int decimalno1 = getDecimal(getBcash(idx));
+			int decimalno2 = getDecimal(getBrats(idx));
+			int decimalno3 = getDecimal(getScash(idx));
+			int decimalno4 = getDecimal(getSrats(idx));
 			String strCurcd = new String(getCurcd(idx));
 			int iCurcd = Integer.parseInt(strCurcd);
 			String strColno = getStrColno(iCurcd);
 			String strRowno = String.format("%02d", iCurcd - 1);
 
 			sndStr = String.format("XS%s%s00R00610   A00028%s%s%s%s%s%s%s%s%s%s%s ", brno, wsno, strColno, strCurcd
-//					,strRowno, decimalno1, parFieldValue(getSrats(idx)), decimalno2,
-//					parFieldValue(getBrats(idx)), decimalno3, parFieldValue(getScash(idx)), decimalno4,
-//					parFieldValue(getBcash(idx)));
-					, strRowno, decimalno1, parFieldValue(getBrats(idx)), decimalno2, parFieldValue(getBcash(idx)),
-					decimalno3, parFieldValue(getSrats(idx)), decimalno4, parFieldValue(getScash(idx)));
+//					, strRowno, decimalno1, parFieldValue(getBrats(idx)), decimalno2, parFieldValue(getBcash(idx)),
+//					decimalno3, parFieldValue(getSrats(idx)), decimalno4, parFieldValue(getScash(idx)));
+			, strRowno, decimalno1, parFieldValue(getBcash(idx)), decimalno2, parFieldValue(getBrats(idx)),
+			decimalno3, parFieldValue(getScash(idx)), decimalno4, parFieldValue(getSrats(idx)));
 			this.RateRecList.add(sndStr);
 			log.debug("len={} sndStr=[{}]", sndStr.length(), sndStr);
 			this.startiCurcd += 1;

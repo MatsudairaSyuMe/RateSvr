@@ -58,7 +58,7 @@ public class ClientConnection extends ChannelDuplexHandler implements Runnable {
 	//20200105
 //	byte[] clientMessage;
 	//----
-	//20200103
+	//20200105
 	public ByteBuf clientMessageBuf = Unpooled.buffer(16384);
 	//----
 	Object readMutex = new Object();
@@ -161,7 +161,7 @@ public class ClientConnection extends ChannelDuplexHandler implements Runnable {
 					if (!future.isSuccess()) {// if is not successful, reconnect
 						future.channel().close();
 						log.debug("seceduleConnect");
-						//20200103
+						//20200105
 						clientMessageBuf.clear();
 						//----
 						try {
@@ -218,12 +218,9 @@ public class ClientConnection extends ChannelDuplexHandler implements Runnable {
 
 	public void connectionEstablished() {
 		log.debug("connectionEstablished()");
-		//20200103
+		//20200105
 		clientMessageBuf.clear();
 		//----
-		/*
-		 * try { send("hello"); } catch (IOException e) { e.printStackTrace(); }
-		 */
 	}
 
 	@Override
@@ -259,7 +256,6 @@ public class ClientConnection extends ChannelDuplexHandler implements Runnable {
 			@Override
 			public void initChannel(SocketChannel ch) throws Exception {
 				ch.pipeline().addLast("log", new LoggingHandler(ClientConnection.class, LogLevel.INFO));
-//				ch.pipeline().addLast(frameDecoderName, new IntegerHeaderFrameDecoder());
 				ch.pipeline().addLast(getHandler("FAS"));
 			}
 		});
@@ -346,7 +342,7 @@ public class ClientConnection extends ChannelDuplexHandler implements Runnable {
 		log.debug(clientId + " channelInactive");
 		publishInactiveEvent();
 		this.clientChannel = null;
-		//20200103
+		//20200105
 		this.clientMessageBuf.clear();
 		//----
 		super.channelInactive(ctx);
@@ -368,7 +364,7 @@ public class ClientConnection extends ChannelDuplexHandler implements Runnable {
 					log.debug("readableBytes={} barray={}", size, buf.hasArray());
 					if (buf.isReadable() && !buf.hasArray()) {
 						// it is long raw telegram
-						//20200103
+						//20200105
 						log.debug("readableBytes={} barray={}", buf.readableBytes(), buf.hasArray());
 						if (clientMessageBuf.readerIndex() > (clientMessageBuf.capacity() / 2)) {
 							clientMessageBuf.discardReadBytes();
@@ -382,10 +378,6 @@ public class ClientConnection extends ChannelDuplexHandler implements Runnable {
 							log.debug("clientMessageBuf.readableBytes={}",clientMessageBuf.readableBytes());
 							while (clientMessageBuf.readableBytes() >= 12) {
 								byte[] lenbary = new byte[3];
-//								byte[] hdr = new byte[12];
-//								clientMessageBuf.getBytes(clientMessageBuf.readerIndex(), hdr);
-//								for (byte b: hdr)
-//									log.debug("{}",b);
 								clientMessageBuf.getBytes(clientMessageBuf.readerIndex() + 3, lenbary);
 								log.debug("clientMessageBuf.readableBytes={} size={}",clientMessageBuf.readableBytes(), fromByteArray(lenbary));
 								if ((size = fromByteArray(lenbary)) > 0 && size <= clientMessageBuf.readableBytes()) {
@@ -418,32 +410,6 @@ public class ClientConnection extends ChannelDuplexHandler implements Runnable {
 									break;
 								
 							}
-							//----
-							//mark 20200105
-/*							clientMessage = new byte[size];
-							buf.getBytes(0, clientMessage);
-							getSeqStr = new String(clientMessage, 7, 3);
-							FileUtils.writeStringToFile(seqNoFile, getSeqStr, Charset.defaultCharset());
-							List<String> rlist = cnvS004toR0061(clientMessage);
-							if (rlist != null && rlist.size() > 0) {
-								for (String l : rlist) {
-									clientMessage = l.getBytes();
-									buf = channel_.alloc().buffer().writeBytes(clientMessage);
-									publishactorSendmessage(clientId, buf);
-								}
-								try {
-									int seqno = Integer.parseInt(
-											FileUtils.readFileToString(seqNoFile, Charset.defaultCharset())) + 1;
-									if (seqno > 999) {
-										seqno = 0;
-									}
-									HostS004SndHost(seqno, verhbrno, verhwsno, curMrkttm);
-									FileUtils.writeStringToFile(seqNoFile, Integer.toString(seqno), Charset.defaultCharset());
-								} catch (Exception e) {
-									log.warn(e.getMessage());
-								}
-							}
-							*/
 						}
 					}
 				}
@@ -478,7 +444,7 @@ public class ClientConnection extends ChannelDuplexHandler implements Runnable {
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
 		log.debug(clientId + " exceptionCaught=" + cause.getMessage());
 		publishInactiveEvent();
-		//20200103
+		//20200105
 		this.clientMessageBuf.clear();
 		//----
 		ctx.close();
