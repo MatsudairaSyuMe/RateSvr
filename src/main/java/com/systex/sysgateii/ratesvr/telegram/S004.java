@@ -328,7 +328,48 @@ public class S004 {
 		}
 		return msg;
 	}
+	
+	//20100108 adjust decimal and show message
+	private int adjustField3_4(String src, int decimal) {
+		int leftfirstnotspace = -1;
+		int adjust = 0;
+		if (decimal < 3)
+			return adjust;
+		byte[] b = src.getBytes();
+		for (int i = 0;i < b.length;i++)
+			if (b[i] != (byte)' ') {
+				leftfirstnotspace = i;
+				break;
+			}
+		if (decimal == 6) {
+			if (leftfirstnotspace < 2)
+				adjust = 1;
+			else
+				adjust = 2;
+		} else if (b[b.length - 1] != (byte)'0' && leftfirstnotspace > 0)
+			adjust = 1;
+//      System.out.println("decimal point djust " + adjust);
+		return adjust;
+	}
 
+	private int chkadjust(int mindecimal, int decimal) {
+		int adjust = 0;
+		if (decimal == 0 || mindecimal == 0)
+			return adjust;
+		return (decimal - mindecimal);
+	}
+
+	private String adjustField(String src, int adjust) {
+		byte[] b = src.getBytes();
+		if (adjust > 0) {
+			src = new String(b, adjust, b.length - adjust);
+			for (int i = 0; i < adjust; i++)
+				src = src + "0";
+//          System.out.println(" [" + src + "] <==new");
+			}
+		return src;
+	}
+	//----
 	public void setData(byte[] src) {
 		byte[] b = null;
 		byte[] tmpb = new byte[6];
@@ -537,31 +578,31 @@ public class S004 {
 			System.arraycopy(b, S004.CODESTARTPOS, fld, 0, S004.CODELEN);
 			this.code[idx] = fld;
 //			S004RecMap.add(cdList);
-			/*
-			 * log.debug(" getMrktcd=[" + new String(getMrktcd(idx)) + "] getBrats=[" + new
-			 * String(getBrats(idx)) + "] getSrats=[" + new String(getSrats(idx)) +
-			 * "] getUscrat=[" + new String(getUscrat(idx)) + "] getRcnt=[" + new
-			 * String(getRcnt(idx)) + "] getBrat1=[" + new String(getBrat1(idx)) +
-			 * "] getBrat3=[" + new String(getBrat3(idx)) + "] getBrat6=[" + new
-			 * String(getBrat6(idx)) + "] getBrat9=[" + new String(getBrat9(idx)) +
-			 * "] getBrat12=[" + new String(getBrat12(idx)) + "] getBrat15=[" + new
-			 * String(getBrat15(idx)) + "] getBrat18=[" + new String(getBrat18(idx)) +
-			 * "] getBrat1y=[" + new String(getBrat1y(idx)) + "] getBrat2y=[" + new
-			 * String(getBrat2y(idx)) + "] getBrat3y=[" + new String(getBrat3y(idx)) +
-			 * "] getSrat1=[" + new String(getSrat1(idx)) + "] getSrat3=[" + new
-			 * String(getSrat3(idx)) + "] getSrat6=[" + new String(getSrat6(idx)) +
-			 * "] getSrat9=[" + new String(getSrat9(idx)) + "] getSrat12=[" + new
-			 * String(getSrat12(idx)) + "] getSrat15=[" + new String(getSrat15(idx)) +
-			 * "] getSrat18=[" + new String(getSrat18(idx)) + "] getSrat1y=[" + new
-			 * String(getSrat1y(idx)) + "] getSrat2y=[" + new String(getSrat2y(idx)) +
-			 * "] getSrat3y=[" + new String(getSrat3y(idx)) + "] getBcash=[" + new
-			 * String(getBcash(idx)) + "] getScash=[" + new String(getScash(idx)) +
-			 * "] getFxrat=[" + new String(getFxrat(idx)) + "] getAcrat=[" + new
-			 * String(getAcrat(idx)) + "] getB=[" + new String(getB(idx)) + "] getLmtb=[" +
-			 * new String(getLmtb(idx)) + "] getS=[" + new String(getS(idx)) + "] getLmts=["
-			 * + new String(getLmts(idx)) + "] getRlrat=[" + new String(getRlrat(idx)) +
-			 * "] getCode=[" + new String(getCode(idx)) + "]");
-			 */
+			/**/
+			  log.debug(" getMrktcd=[" + new String(getMrktcd(idx)) + "] getBrats=[" + new
+			  String(getBrats(idx)) + "] getSrats=[" + new String(getSrats(idx)) +
+			  "] getUscrat=[" + new String(getUscrat(idx)) + "] getRcnt=[" + new
+			  String(getRcnt(idx)) + "] getBrat1=[" + new String(getBrat1(idx)) +
+			  "] getBrat3=[" + new String(getBrat3(idx)) + "] getBrat6=[" + new
+			  String(getBrat6(idx)) + "] getBrat9=[" + new String(getBrat9(idx)) +
+			  "] getBrat12=[" + new String(getBrat12(idx)) + "] getBrat15=[" + new
+			  String(getBrat15(idx)) + "] getBrat18=[" + new String(getBrat18(idx)) +
+			  "] getBrat1y=[" + new String(getBrat1y(idx)) + "] getBrat2y=[" + new
+			  String(getBrat2y(idx)) + "] getBrat3y=[" + new String(getBrat3y(idx)) +
+			  "] getSrat1=[" + new String(getSrat1(idx)) + "] getSrat3=[" + new
+			  String(getSrat3(idx)) + "] getSrat6=[" + new String(getSrat6(idx)) +
+			  "] getSrat9=[" + new String(getSrat9(idx)) + "] getSrat12=[" + new
+			  String(getSrat12(idx)) + "] getSrat15=[" + new String(getSrat15(idx)) +
+			  "] getSrat18=[" + new String(getSrat18(idx)) + "] getSrat1y=[" + new
+			  String(getSrat1y(idx)) + "] getSrat2y=[" + new String(getSrat2y(idx)) +
+			  "] getSrat3y=[" + new String(getSrat3y(idx)) + "] getBcash=[" + new
+			  String(getBcash(idx)) + "] getScash=[" + new String(getScash(idx)) +
+			  "] getFxrat=[" + new String(getFxrat(idx)) + "] getAcrat=[" + new
+			  String(getAcrat(idx)) + "] getB=[" + new String(getB(idx)) + "] getLmtb=[" +
+			  new String(getLmtb(idx)) + "] getS=[" + new String(getS(idx)) + "] getLmts=["
+			  + new String(getLmts(idx)) + "] getRlrat=[" + new String(getRlrat(idx)) +
+			  "] getCode=[" + new String(getCode(idx)) + "]");
+			 /**/
 			if (this.startiCurcd == 1) {
 				System.arraycopy(mrktdt, 2, tmpb, 0, S004.PEN_XCERT1LEN);
 				sndStr = String.format("XS%s%s00R00530   AT00210000000%s0%-6s4   615", brno, wsno, new String(tmpb),
@@ -570,17 +611,52 @@ public class S004 {
 				log.debug("pre len={} sndStr=[{}]", sndStr.length(), sndStr);
 			}
 			int decimalno1 = getDecimal(getBrats(idx));
+			int mindecimalno = decimalno1;
 			int decimalno2 = getDecimal(getBcash(idx));
+			if (mindecimalno == 0)
+				mindecimalno = decimalno2;
+			else if (mindecimalno > decimalno2)
+				mindecimalno = decimalno2;
 			int decimalno3 = getDecimal(getSrats(idx));
+			if (mindecimalno == 0)
+				mindecimalno = decimalno3;
+			else if (mindecimalno > decimalno3)
+				mindecimalno = decimalno3;
 			int decimalno4 = getDecimal(getScash(idx));
+			if (mindecimalno == 0)
+				mindecimalno = decimalno4;
+			else if (mindecimalno > decimalno4)
+				mindecimalno = decimalno4;
+		  log.debug(" mindecimalno=[{}] {} {} {} {}",mindecimalno, decimalno1,decimalno2, decimalno3, decimalno4);
+				
 			String strCurcd = new String(getCurcd(idx));
 			int iCurcd = Integer.parseInt(strCurcd);
 			String strColno = getStrColno(iCurcd);
 			String strRowno = String.format("%02d", iCurcd - 1);
 
+			//20100108 modify by MatsudairaSyume
+			// for adjust display message decimal data
+			//
+			String parstr1 = parFieldValue(getBrats(idx));
+			String parstr2 = parFieldValue(getBcash(idx));
+			String parstr3 = parFieldValue(getSrats(idx));
+			String parstr4 = parFieldValue(getScash(idx));
+			int adjno1 = chkadjust(mindecimalno, decimalno1);
+			parstr1 = adjustField(parstr1, adjno1);
+			decimalno1 = decimalno1 - adjno1;
+			int adjno2 = chkadjust(mindecimalno, decimalno2);
+			parstr2 = adjustField(parstr2, adjno2);
+			decimalno2 = decimalno2 - adjno2;
+			int adjno3 = chkadjust(mindecimalno, decimalno3);
+			parstr3 = adjustField(parstr3, adjno3);
+			decimalno3 = decimalno3 - adjno3;
+			int adjno4 = chkadjust(mindecimalno, decimalno4);
+			parstr4 = adjustField(parstr4, adjno4);
+			decimalno4 = decimalno4 - adjno4;
 			sndStr = String.format("XS%s%s00R00610   A00028%s%s%s%s%s%s%s%s%s%s%s ", brno, wsno, strColno, strCurcd
-					, strRowno, decimalno1, parFieldValue(getBrats(idx)), decimalno2, parFieldValue(getBcash(idx)),
-					decimalno3, parFieldValue(getSrats(idx)), decimalno4, parFieldValue(getScash(idx)));
+			, strRowno, decimalno1, parstr1, decimalno2, parstr2,
+			decimalno3, parstr3, decimalno4, parstr4);
+			//----
 			this.RateRecList.add(sndStr);
 			log.debug("len={} sndStr=[{}]", sndStr.length(), sndStr);
 			this.startiCurcd += 1;
