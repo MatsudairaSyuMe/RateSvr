@@ -605,7 +605,8 @@ public class S004 {
 			 /**/
 			if (this.startiCurcd == 1) {
 				System.arraycopy(mrktdt, 2, tmpb, 0, S004.PEN_XCERT1LEN);
-				sndStr = String.format("XS%s%s00R00530   AT00210000000%s0%-6s4   615", brno, wsno, new String(tmpb),
+//				sndStr = String.format("XS%s%s00R00530   AT00210000000%s0%-6s4   615", brno, wsno, new String(tmpb),
+				sndStr = String.format("XS%s%s00R00530   AT00210000000%s0%-6s       ", brno, wsno, new String(tmpb),
 						new String(mrkttm));
 				this.RateRecList.add(sndStr);
 				log.debug("pre len={} sndStr=[{}]", sndStr.length(), sndStr);
