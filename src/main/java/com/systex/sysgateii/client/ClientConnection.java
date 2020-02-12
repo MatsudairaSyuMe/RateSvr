@@ -82,6 +82,11 @@ public class ClientConnection extends ChannelDuplexHandler implements Runnable {
 	private boolean S004Start = false;
 	private S004 s004tele = null;
 	private File seqNoFile;
+	//20200212 MatsudairaSyume
+	//  check brno 999 for broadcast, other number for peer branch 
+	private String showBrno = "999";  //default for broadcast
+	//----
+
 
 	List<ActorStatusListener> actorStatusListeners = new ArrayList<ActorStatusListener>();
 
@@ -274,6 +279,7 @@ public class ClientConnection extends ChannelDuplexHandler implements Runnable {
 					if (!this.S004Start) {
 						this.S004Start = true;
 						this.s004tele = new S004(brnoList.get(0), wsnoList.get(0));
+						this.showBrno = new String(src, 12, 3);
 					} else if (src[32] == (byte) '1') {
 						this.S004Start = false;
 					}
@@ -281,7 +287,10 @@ public class ClientConnection extends ChannelDuplexHandler implements Runnable {
 					rtn = new byte[src.length - 47];
 					System.arraycopy(src, 47, rtn, 0, src.length - 47);
 					this.s004tele.setData(rtn);
-					log.debug("brno 0 ={}", brnoList.get(0));
+					//20200212 MatsudairaSyume
+					//  check brno 999 for broadcast, other number for peer branch 
+					log.debug("brno 0 ={} ==>[{}]", brnoList.get(0), showBrno);
+					//----
 					log.debug("wsno 0 ={}", wsnoList.get(0));
 					log.debug("getMrktdt()={}", new String(this.s004tele.getMrktdt()));
 					log.debug("getSysdt={}", new String(this.s004tele.getSysdt()));
