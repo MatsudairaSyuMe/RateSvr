@@ -5,3 +5,5 @@
 build
 # Ignore Gradle compiler temp directory
 bin
+.classpath
+.settings
