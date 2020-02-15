@@ -1,8 +1,10 @@
 package com.systex.sysgateii.server;
 
+import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
@@ -82,6 +84,10 @@ public class ServerProducer extends ChannelDuplexHandler // ChannelInboundHandle
 	private String rtnC25 = "TD981410011E0164    3E013                                                                                                         [SCTL]                            ";
 	// allowed client ip list
 	List<String> ipList = new ArrayList<String>();
+	//2020015
+	List<String> brnoList = new ArrayList<String>();
+	ConcurrentHashMap<String, List<String>> brnoaddrGrp = new ConcurrentHashMap<String, List<String>>();
+	//----
 	List<ChannelHandlerContext> sessionList = new ArrayList<ChannelHandlerContext>();
 
 	public ChannelHandlerContext getCurrentContext() {
@@ -104,10 +110,27 @@ public class ServerProducer extends ChannelDuplexHandler // ChannelInboundHandle
 		return ipList;
 	}
 
-	public void setIpList(List<String> ipList) {
-		this.ipList = ipList;
+	public void setIpList(List<String> IpList) {
+		this.ipList = IpList;
+	}
+	
+	//20200215
+	public List<String> getBrnoList() {
+		return brnoList;
 	}
 
+	public void setBrnoaddrGrp(ConcurrentHashMap<String, List<String>> brnoaddrGrp) {
+		this.brnoaddrGrp = brnoaddrGrp;
+	}
+	public ConcurrentHashMap<String, List<String>> getBrnoaddrGrp() {
+		return brnoaddrGrp;
+	}
+
+	public void setBrnoList(List<String> BrnoList) {
+		this.brnoList = BrnoList;
+	}
+	//----
+	
 	public int getKeepAlive() {
 		return keepAlive;
 	}
@@ -244,7 +267,7 @@ public class ServerProducer extends ChannelDuplexHandler // ChannelInboundHandle
 			/*
 			 * Matsudaira Syume for FixedRecvByteBufAllocator not split telegram
 			 */
-
+			//20200215 for receive all interface connection
 			// Bind and start to accept incoming connections.
 			// Waits for this future until it is done, and rethrows
 			// the cause of the failure if this future failed.
@@ -253,9 +276,11 @@ public class ServerProducer extends ChannelDuplexHandler // ChannelInboundHandle
 			// ChannelFuture f = b.bind(bindAddr,
 			// port).sync().channel().closeFuture().sync();
 			log.debug("bind to " + bindAddress + " port=" + port + " with buffer size=" + bufferSize);
-
-			listenFuture = bootStrap.bind(bindAddress, port);
-
+			if (bindAddress.trim().equals("*"))
+				listenFuture = bootStrap.bind(port).sync().channel().closeFuture().sync();
+			else
+				listenFuture = bootStrap.bind(bindAddress, port).sync().channel().closeFuture().sync();
+			//--------
 			// add to channel group
 			// f.channel();
 			// allChannels.add(xxx);
@@ -311,7 +336,9 @@ public class ServerProducer extends ChannelDuplexHandler // ChannelInboundHandle
 		log.debug("lpList {} check {}", ipList, ip);
 		if (ipList != null && ipList.size() > 0 && StrUtil.isNotEmpty(ip)) {
 			for (String s : ipList) {
+//				log.debug("lpList{} ==> check {}", s, ip);
 				if (StrUtil.isNotEmpty(s) && ip.startsWith(s)) {
+					log.debug("lpList ==> check {} inlist ", s, ip);
 					return true;
 				}
 			}
@@ -538,15 +565,26 @@ public class ServerProducer extends ChannelDuplexHandler // ChannelInboundHandle
 
 	@Override
 	public void actorSendmessage(String actorId, Object eventObj) {
-		log.debug("actorSendmessage {} channelActive sessionList size={} ", serverId, sessionList.size());
+		//20200215
+		log.debug("actorSendmessage actorId {} sessionList size={} ", actorId, sessionList.size());
+		log.debug("actorSendmessage brnoaddrGrp={} ", this.brnoaddrGrp);
 		if (eventObj instanceof ByteBuf) {
 			ByteBuf result = (ByteBuf) eventObj;
 			byte[] result1 = new byte[result.readableBytes()];
 			result.readBytes(result1);
-
+			//20200215
+			String rmtaddr = "";
+			List<String> targetaddr = null;
+			if (!actorId.equals("999"))
+				targetaddr = this.brnoaddrGrp.get(actorId);
+			//----
 			for (ChannelHandlerContext curctx : sessionList) {
-				if (curctx != null)
-					writeMessageWithContext(curctx, new String(result1), CharsetUtil.UTF_8);
+				rmtaddr = ((InetSocketAddress) curctx.channel().remoteAddress()).getAddress().getHostAddress().trim();
+				log.debug("bordaddr={} brno {}", rmtaddr, actorId);
+				if (curctx != null) {
+					if (actorId.equals("999") || targetaddr != null && targetaddr.contains(rmtaddr))
+						writeMessageWithContext(curctx, new String(result1), CharsetUtil.UTF_8);
+				}
 			}
 			result1 = null;
 		}

@@ -103,10 +103,10 @@ public class DynamicProps {
 		// 指定表達示引擎
 		config.setExpressionEngine(engine);
 
-		System.out.println(config.getInt("boards.board.brno"));
-		System.out.println(config.getInt("boards.board.id"));
-		System.out.println(config.getString("boards.board.ip"));
-		System.out.println(config.getString("boards.board.start[@description]"));
+		log.info("{}",config.getInt("boards.board.brno"));
+		log.info("{}",config.getInt("boards.board.id"));
+		log.info("{}",config.getString("boards.board.ip"));
+		log.info("{}",config.getString("boards.board.start[@description]"));
 	}
 
 	public void ChkCfg(XMLConfiguration config) throws ConfigurationException {

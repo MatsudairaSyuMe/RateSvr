@@ -160,10 +160,11 @@ public class NodeController implements MessageListener<byte[]>, Runnable {
 				port = Integer.parseInt(map.get("system.port"));
 				log.info("port=" + port);
 				String tmps = map.get("boards.board.ip");
+				log.info("boards.board.ip=" + tmps);
 				if (tmps.startsWith("["))
 					tmps = tmps.substring(1);
 				if (tmps.endsWith("]"))
-					tmps = tmps.substring(0, tmps.length() - 2);
+					tmps = tmps.substring(0, tmps.length() - 1);
 				String[] localary = tmps.split(",");
 				ServerProducer producer = new ServerProducer(map.get("system.port"), bindAddr, port, bufferSize,
 						tsKeepAlive, tsIdleTimeout);
@@ -181,11 +182,22 @@ public class NodeController implements MessageListener<byte[]>, Runnable {
 				if (tmps.startsWith("["))
 					tmps = tmps.substring(1);
 				if (tmps.endsWith("]"))
-					tmps = tmps.substring(0, tmps.length() - 2);
+					tmps = tmps.substring(0, tmps.length() - 1);
 				localary = tmps.split(",");
 				for (String cs : localary)
 					brnos.add(cs.trim());
-
+				//20200215
+				producer.getBrnoList().addAll(brnos);
+				for (int j = 0; j < brnos.size(); j++) {
+					if (producer.getBrnoaddrGrp().containsKey(brnos.get(j)))
+						producer.getBrnoaddrGrp().get(brnos.get(j)).add(producer.getIpList().get((j)));
+					else {
+						List<String> subbrnoList = new ArrayList<String>();
+						subbrnoList.add(producer.getIpList().get((j)));
+						producer.getBrnoaddrGrp().put(brnos.get(j), subbrnoList);
+					}
+				}
+				//----
 				ClientConnection conn = new ClientConnection(map, brnos, wsnos, new Timer());
 
 				conn.addActorStatusListener(producer);

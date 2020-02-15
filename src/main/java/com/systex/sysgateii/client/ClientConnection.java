@@ -43,6 +43,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.ArrayUtils;
 
 @Sharable // 因為通道只有一組 handler instance 只有一個，所以可以 share
 public class ClientConnection extends ChannelDuplexHandler implements Runnable {
@@ -278,14 +279,18 @@ public class ClientConnection extends ChannelDuplexHandler implements Runnable {
 					// S004 telegram
 					if (!this.S004Start) {
 						this.S004Start = true;
-						this.s004tele = new S004(brnoList.get(0), wsnoList.get(0));
-						this.showBrno = new String(src, 12, 3);
+///						this.s004tele = new S004(brnoList.get(0), wsnoList.get(0));
+						//20200215
+						this.showBrno = new String(src, src.length - 4, 4).trim();
+						this.s004tele = new S004(this.showBrno, wsnoList.get(0));
+						//---
 					} else if (src[32] == (byte) '1') {
 						this.S004Start = false;
 					}
 					log.debug("S004 {} telegram", src[32] == (byte) '0' ? "" : "last");
 					rtn = new byte[src.length - 47];
-					System.arraycopy(src, 47, rtn, 0, src.length - 47);
+//					System.arraycopy(src, 47, rtn, 0, src.length - 47);
+					System.arraycopy(src, 47, rtn, 0, src.length - 51);
 					this.s004tele.setData(rtn);
 					//20200212 MatsudairaSyume
 					//  check brno 999 for broadcast, other number for peer branch 
@@ -308,6 +313,13 @@ public class ClientConnection extends ChannelDuplexHandler implements Runnable {
 			}
 		}
 		return rtnList;
+	}
+	private byte[] remove03(byte[] source) {
+		if (source[source.length - 1] == 0x03) {
+			source = ArrayUtils.subarray(source, 0, source.length - 1);
+			log.debug("remove03");
+		}
+		return source;
 	}
 	
 	//20200105
@@ -395,14 +407,18 @@ public class ClientConnection extends ChannelDuplexHandler implements Runnable {
 									log.debug("read {} byte(s) from clientMessageBuf after {}", size, clientMessageBuf.readableBytes());
 									getSeqStr = new String(telmbyteary, 7, 3);
 									FileUtils.writeStringToFile(seqNoFile, getSeqStr, Charset.defaultCharset());
-									List<String> rlist = cnvS004toR0061(telmbyteary);
+									List<String> rlist = cnvS004toR0061(remove03(telmbyteary));
 									if (rlist != null && rlist.size() > 0) {
 										for (String l : rlist) {
 											telmbyteary = l.getBytes();
 											buf = channel_.alloc().buffer().writeBytes(telmbyteary);
-											publishactorSendmessage(clientId, buf);
+											//20200215
+											// modofy for brodcst dnd F0304
+											publishactorSendmessage(this.showBrno, buf);
+											//----
 										}
 										try {
+											//write S004 TITA to HOST
 											int seqno = Integer.parseInt(
 													FileUtils.readFileToString(seqNoFile, Charset.defaultCharset())) + 1;
 											if (seqno > 999) {
@@ -414,7 +430,6 @@ public class ClientConnection extends ChannelDuplexHandler implements Runnable {
 											log.warn(e.getMessage());
 										}
 									}
-
 								} else
 									break;
 								
@@ -510,15 +525,26 @@ public class ClientConnection extends ChannelDuplexHandler implements Runnable {
 		log.debug("-publish end-");
 	}
 
+	//20200215
+	// modify for broaddcsting and F0304
 	public void publishactorSendmessage(String actorId, Object eventObj) {
 		log.debug(actorId + " publish message to listener");
 		for (ActorStatusListener listener : actorStatusListeners) {
-			listener.actorSendmessage(clientId, eventObj);
+			log.debug(actorId + " publish message to listener {}", listener);
+			//20200215
+			if (actorId.equals("999")) {
+				log.debug("{} publish message to ALL IP", actorId);
+			} else {
+				if (this.brnoList.indexOf(actorId.trim()) > -1)
+					log.debug("{} publish message to target IP", actorId);
+			}
+			//----
+			listener.actorSendmessage(actorId, eventObj);
 		}
 
 		log.debug("-publish end-");
 	}
-
+    //----
 	// end for ChannelDuplexHandler function
 
 	public static void sleep(int t) {

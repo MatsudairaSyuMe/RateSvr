@@ -1,5 +1,7 @@
 package com.systex.sysgateii.listener;
 
+import io.netty.channel.ChannelHandlerContext;
+
 public interface ActorStatusListener {
 
 	public void actorActive(String actorId);
@@ -9,5 +11,4 @@ public interface ActorStatusListener {
 	public void actorShutdown(String actorId);
 
 	public void actorSendmessage(String actorId, Object eventObj);
-
 }
