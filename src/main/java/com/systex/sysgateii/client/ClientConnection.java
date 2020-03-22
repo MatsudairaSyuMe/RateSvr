@@ -526,7 +526,7 @@ public class ClientConnection extends ChannelDuplexHandler implements Runnable {
 	}
 
 	//20200215
-	// modify for broaddcsting and F0304
+	// modify for broadcasting and F0304
 	public void publishactorSendmessage(String actorId, Object eventObj) {
 		log.debug(actorId + " publish message to listener");
 		for (ActorStatusListener listener : actorStatusListeners) {

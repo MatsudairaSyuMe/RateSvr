@@ -2,6 +2,7 @@ package com.systex.sysgateii.ratesvr.telegram;
 
 //import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Iterator;
 //import java.util.Arrays;
 //import java.util.Iterator;
 import java.util.List;
@@ -150,7 +151,7 @@ public class S004 {
 	private byte[][] lmts = new byte[OC][LMTSLEN];
 	private byte[][] rlrat = new byte[OC][RLRATLEN];
 	private byte[][] code = new byte[OC][CODELEN];
-//	private CopyOnWriteArrayList<List<Float>> S004RecMap = new CopyOnWriteArrayList<List<Float>>();
+	private CopyOnWriteArrayList<List<Float>> S004RecMap = new CopyOnWriteArrayList<List<Float>>();
 	private CopyOnWriteArrayList<String> RateRecList = new CopyOnWriteArrayList<String>();
 //	DecimalFormat df3 = new DecimalFormat("###");
 //	DecimalFormat df3_5 = new DecimalFormat("###.#####");
@@ -577,7 +578,7 @@ public class S004 {
 			fld = new byte[S004.CODELEN];
 			System.arraycopy(b, S004.CODESTARTPOS, fld, 0, S004.CODELEN);
 			this.code[idx] = fld;
-//			S004RecMap.add(cdList);
+			S004RecMap.add(cdList);
 			/**/
 			  log.debug(" getMrktcd=[" + new String(getMrktcd(idx)) + "] getBrats=[" + new
 			  String(getBrats(idx)) + "] getSrats=[" + new String(getSrats(idx)) +
@@ -668,18 +669,29 @@ public class S004 {
 		return this.RateRecList;
 	}
 
-	/*
-	 * public int getMapSize() { int idx = 0; byte[] bary = null; byte[] tmpb = new
-	 * byte[6]; String sndStr = ""; Iterator<List<Float>> itr =
-	 * S004RecMap.iterator(); int iCurcd = 1; while (itr.hasNext()) { idx = 0;
-	 * List<Float> s = (List<Float>) itr.next(); for (float ss : s) { if (idx == 0)
-	 * { System.out.print(idx + " key= " + df3.format(ss) + " "); // else if (idx ==
-	 * 30 || idx == 31) // System.out.print(idx + " val= " + df1_5.format(ss) +
-	 * " "); } else System.out.print(idx + " val= " + df3_5.format(ss) + " ");
-	 * 
-	 * idx += 1; } System.out.println(""); b = null; iCurcd += 1; } return
-	 * S004RecMap.size(); }
-	 */
+/*	public int getMapSize() { 
+		int idx = 0;
+		byte[] bary = null;
+		byte[] tmpb = new byte[6];
+		String sndStr = "";
+		Iterator<List<Float>> itr = S004RecMap.iterator();
+		int iCurcd = 1;
+		while (itr.hasNext()) {
+			idx = 0;
+			List<Float> s = (List<Float>) itr.next();
+			for (float ss : s) {
+				if (idx == 0) {
+					System.out.print(idx + " key= " + df3.format(ss) + " ");
+				else if (idx == 30 || idx == 31)
+					System.out.print(idx + " val= " + df1_5.format(ss) +	 " ");
+				} else
+					System.out.print(idx + " val= " + df3_5.format(ss) + " ");
+				idx += 1;
+			}
+			System.out.println(""); b = null; iCurcd += 1;
+		}
+		return S004RecMap.size();
+	 }*/
 
 	public byte[] getMrktdt() {
 		return mrktdt;
