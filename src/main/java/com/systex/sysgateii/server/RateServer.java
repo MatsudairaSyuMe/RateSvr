@@ -1,10 +1,14 @@
 package com.systex.sysgateii.server;
 
+import java.io.File;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.systex.sysgateii.controller.NodeController;
 import com.systex.sysgateii.ratesvr.conf.DynamicProps;
+
+import ch.qos.logback.classic.util.ContextInitializer;
 
 /**
  * Gateway server for members.<br/>
@@ -23,10 +27,15 @@ import com.systex.sysgateii.ratesvr.conf.DynamicProps;
  *
  */
 public class RateServer {
-	private static Logger log = LoggerFactory.getLogger(RateServer.class);
+	private static Logger log = null;
 	private static boolean isRunning = true;
 
 	public static void main(String[] args) {
+		// must be set before the first call to  LoggerFactory.getLogger()
+		// ContextInitializer.CONFIG_FILE_PROPERTY is set to "logback.configurationFile"
+		System.setProperty(ContextInitializer.CONFIG_FILE_PROPERTY, "." + File.separator + "logback.xml");
+		log = LoggerFactory.getLogger(RateServer.class);
+	 
 		// TODO Auto-generated method stub
 		// 级别為debug的日誌
 //		log.debug("Hello! debug!");

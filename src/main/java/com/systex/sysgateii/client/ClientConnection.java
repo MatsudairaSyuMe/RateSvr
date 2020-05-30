@@ -287,9 +287,8 @@ public class ClientConnection extends ChannelDuplexHandler implements Runnable {
 					} else if (src[32] == (byte) '1') {
 						this.S004Start = false;
 					}
-					log.debug("S004 {} telegram", src[32] == (byte) '0' ? "" : "last");
+					log.debug("S004 {}telegram", src[32] == (byte) '0' ? "" : "last ");
 					rtn = new byte[src.length - 47];
-//					System.arraycopy(src, 47, rtn, 0, src.length - 47);
 					System.arraycopy(src, 47, rtn, 0, src.length - 51);
 					this.s004tele.setData(rtn);
 					//20200212 MatsudairaSyume
