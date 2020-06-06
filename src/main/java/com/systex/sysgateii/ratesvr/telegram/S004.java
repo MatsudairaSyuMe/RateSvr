@@ -264,6 +264,22 @@ public class S004 {
 		}
 		return decimalno1;
 	}
+	//20200606
+	private byte[] adjustMantissa(byte[] src) {
+		// adjust for 3.5 float value digit put into 6 digit display box
+		int intBits = Integer.parseInt(new String(src, 0, 3));
+		if (9 < intBits && intBits < 100) {
+			if (src[7] != (byte) '0')
+				src[7] = (byte) '0';
+		} else if (99 < intBits) {
+			if (src[7] != (byte) '0')
+				src[7] = (byte) '0';
+			if (src[6] != (byte) '0')
+				src[6] = (byte) '0';
+		}
+		return src;
+	}
+	// ----
 
 	private String parFieldValue(byte[] b) {
 		String msg = new String(b);
@@ -612,19 +628,35 @@ public class S004 {
 				this.RateRecList.add(sndStr);
 				log.debug("pre len={} sndStr=[{}]", sndStr.length(), sndStr);
 			}
-			int decimalno1 = getDecimal(getBrats(idx));
+			//20200606
+			byte[] brats = adjustMantissa(getBrats(idx));
+			byte[] bcash = adjustMantissa(getBcash(idx));
+			byte[] srats = adjustMantissa(getSrats(idx));
+			byte[] scash = adjustMantissa(getScash(idx));
+//			int decimalno1 = getDecimal(getBrats(idx));
+			int decimalno1 = getDecimal(brats);
+			//----
 			int mindecimalno = decimalno1;
-			int decimalno2 = getDecimal(getBcash(idx));
+			//20200606
+//			int decimalno2 = getDecimal(getBcash(idx));
+			int decimalno2 = getDecimal(bcash);
+			//----
 			if (mindecimalno == 0)
 				mindecimalno = decimalno2;
 			else if (mindecimalno > decimalno2)
 				mindecimalno = decimalno2;
-			int decimalno3 = getDecimal(getSrats(idx));
+			//20200606
+//			int decimalno3 = getDecimal(getSrats(idx));
+			int decimalno3 = getDecimal(srats);
+			//----
 			if (mindecimalno == 0)
 				mindecimalno = decimalno3;
 			else if (mindecimalno > decimalno3)
 				mindecimalno = decimalno3;
-			int decimalno4 = getDecimal(getScash(idx));
+			//20200606
+//			int decimalno4 = getDecimal(getScash(idx));
+			int decimalno4 = getDecimal(scash);
+			//----
 			if (mindecimalno == 0)
 				mindecimalno = decimalno4;
 			else if (mindecimalno > decimalno4)
@@ -639,10 +671,16 @@ public class S004 {
 			//20100108 modify by MatsudairaSyume
 			// for adjust display message decimal data
 			//
-			String parstr1 = parFieldValue(getBrats(idx));
-			String parstr2 = parFieldValue(getBcash(idx));
-			String parstr3 = parFieldValue(getSrats(idx));
-			String parstr4 = parFieldValue(getScash(idx));
+			//20200606		
+//			String parstr1 = parFieldValue(getBrats(idx));
+//			String parstr2 = parFieldValue(getBcash(idx));
+//			String parstr3 = parFieldValue(getSrats(idx));
+//			String parstr4 = parFieldValue(getScash(idx));
+			String parstr1 = parFieldValue(brats);
+			String parstr2 = parFieldValue(bcash);
+			String parstr3 = parFieldValue(srats);
+			String parstr4 = parFieldValue(scash);
+			//----
 			int adjno1 = chkadjust(mindecimalno, decimalno1);
 			parstr1 = adjustField(parstr1, adjno1);
 			decimalno1 = decimalno1 - adjno1;
