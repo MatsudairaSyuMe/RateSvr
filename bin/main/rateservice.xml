@@ -1,60 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-	<boards>
-		<board>
-			<brno>981</brno>
-			<id>1</id>
-			<ip>10.24.1.98</ip>
-			<port>1024</port>
-			<enable>1</enable>
-			<status>0</status>
-			<start description="掛牌啟用時間(時分)">0800</start>
-			<stop description="掛牌結束時間(時分)">1700</stop>
-		</board>
-		<board>
-			<brno>981</brno>
-			<id>2</id>
-			<ip>10.24.1.96</ip>
-			<port>1024</port>
-			<enable>1</enable>
-			<status>0</status>
-			<start description="掛牌啟用時間(時分)">0800</start>
-			<stop description="掛牌結束時間(時分)">1700</stop>
-		</board>
-		<board>
-			<brno>983</brno>
-			<id>3</id>
-			<ip>127.0.0.1</ip>
-			<port>1024</port>
-			<enable>1</enable>
-			<status>0</status>
-			<start>0800</start>
-			<stop>1700</stop>
-		</board>
-		<board>
-			<brno>984</brno>
-			<id>4</id>
-			<ip>10.24.1.230</ip>
-			<port>1024</port>
-			<enable>1</enable>
-			<status>0</status>
-			<start>0800</start>
-			<stop>1700</stop>
-		</board>
-	</boards>
+	
+<Resource name="jdbc/BIS_DB"
+		url="jdbc:db2://10.1.6.220:50100/BISDB" username="BISAP"
+		password="P@ssw0rd" auth="Container" type="javax.sql.DataSource"
+		maxActive="8" maxIdle="2" maxWait="-1" />
 	<system>
-		<!--<ip>10.24.1.230</ip>-->
-		<ip>*</ip>
+		<ip>192.168.30.59</ip>
 		<port>12000</port>
-		<logpath>/home/scotthong/tmp</logpath>
+		<logpath>/gwlog/ratesvr</logpath>
 		<user>scotthong</user>
 	</system>
-	<svrsubport>
-		<svrip>10.24.1.230</svrip>
+	<!-- <svrsubport>
+		<svrip>192.168.14.91</svrip>
 		<svrport>15000</svrport>
-		<localip>10.24.1.230</localip>
-		<localport>15010</localport>
-		<verhbrno>984</verhbrno>
+		<localip>192.168.14.129</localip>
+		<localport>15331</localport>
+		<verhbrno>983</verhbrno>
 		<verhwsno>80</verhwsno>
-	</svrsubport>
+	</svrsubport> -->
 </configuration>

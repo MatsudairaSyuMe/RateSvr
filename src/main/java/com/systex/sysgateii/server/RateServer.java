@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 
 import com.systex.sysgateii.controller.NodeController;
 import com.systex.sysgateii.ratesvr.conf.DynamicProps;
+import com.systex.sysgateii.ratesvr.dao.GwCfgDao;
 
 import ch.qos.logback.classic.util.ContextInitializer;
 
@@ -31,11 +32,10 @@ public class RateServer {
 	private static boolean isRunning = true;
 
 	public static void main(String[] args) {
-		// must be set before the first call to  LoggerFactory.getLogger()
+		// must be set before the first call to LoggerFactory.getLogger()
 		// ContextInitializer.CONFIG_FILE_PROPERTY is set to "logback.configurationFile"
 		System.setProperty(ContextInitializer.CONFIG_FILE_PROPERTY, "." + File.separator + "logback.xml");
 		log = LoggerFactory.getLogger(RateServer.class);
-	 
 		// TODO Auto-generated method stub
 		// 级别為debug的日誌
 //		log.debug("Hello! debug!");
@@ -48,7 +48,6 @@ public class RateServer {
 		try {
 			log.info("RateServer server start...");
 			DynamicProps dcf = new DynamicProps("rateservice.xml");
-
 //			ServiceServer.createServer();
 //			ServiceServer.startServer();
 
@@ -75,7 +74,7 @@ public class RateServer {
 		} catch (Exception e) {
 			e.printStackTrace();
 			log.error(e.getMessage());
-		}
+		} 
 
 	}
 

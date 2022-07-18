@@ -2,10 +2,13 @@ package com.systex.sysgateii.client;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import com.systex.sysgateii.comm.Constants;
 import com.systex.sysgateii.listener.ActorStatusListener;
+import com.systex.sysgateii.ratesvr.dao.GwCfgDao;
 import com.systex.sysgateii.ratesvr.telegram.S004;
+import com.systex.sysgateii.ratesvr.telegram.T018;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
@@ -44,6 +47,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 
 @Sharable // 因為通道只有一組 handler instance 只有一個，所以可以 share
 public class ClientConnection extends ChannelDuplexHandler implements Runnable {
@@ -56,12 +60,12 @@ public class ClientConnection extends ChannelDuplexHandler implements Runnable {
 	Channel clientChannel;
 	private CountDownLatch readLatch;
 	private String idleStateHandlerName = "idleStateHandler";
-	//20200105
+	// 20200105
 //	byte[] clientMessage;
-	//----
-	//20200105
+	// ----
+	// 20200105
 	public ByteBuf clientMessageBuf = Unpooled.buffer(16384);
-	//----
+	// ----
 	Object readMutex = new Object();
 	// end for ChannelDuplexHandler function
 
@@ -83,11 +87,19 @@ public class ClientConnection extends ChannelDuplexHandler implements Runnable {
 	private boolean S004Start = false;
 	private S004 s004tele = null;
 	private File seqNoFile;
-	//20200212 MatsudairaSyume
-	//  check brno 999 for broadcast, other number for peer branch 
-	private String showBrno = "999";  //default for broadcast
-	//----
+	// 20200212 MatsudairaSyume
+	// check brno 999 for broadcast, other number for peer branch
+	private String showBrno = "999"; // default for broadcast
+	private String rateType ="0";
+	// ----
 
+	// SUN test
+	private boolean T018Start = false;
+	private T018 T018tele = null;
+	private Logger faslog = LoggerFactory.getLogger("faslog");
+	private String fasSendPtrn = "-->FAS len %4d :[............%s]";
+	private String fasRecvPtrn = "<--FAS len %4d :[............%s]";
+	// =============
 
 	List<ActorStatusListener> actorStatusListeners = new ArrayList<ActorStatusListener>();
 
@@ -99,17 +111,19 @@ public class ClientConnection extends ChannelDuplexHandler implements Runnable {
 		this.actorStatusListeners = actorStatusListeners;
 	}
 
-	public ClientConnection(String rmthost, int rmtport, String verhbrno, String verhwsno, List<String> brnolist, List<String> wsnolist, Timer timer) {
+	public ClientConnection(String rmthost, int rmtport, String verhbrno, String verhwsno, List<String> brnolist,
+			List<String> wsnolist, Timer timer) {
 		this(new InetSocketAddress(rmthost, rmtport), null, verhbrno, verhwsno, brnolist, wsnolist, timer);
 	}
 
-	public ClientConnection(String rmthost, int rmtport, String localhost, int localport, String verhbrno, String verhwsno, List<String> brnolist,
-			List<String> wsnolist, Timer timer) {
-		this(new InetSocketAddress(rmthost, rmtport), new InetSocketAddress(localhost, localport), verhbrno, verhwsno, brnolist, wsnolist,
-				timer);
+	public ClientConnection(String rmthost, int rmtport, String localhost, int localport, String verhbrno,
+			String verhwsno, List<String> brnolist, List<String> wsnolist, Timer timer) {
+		this(new InetSocketAddress(rmthost, rmtport), new InetSocketAddress(localhost, localport), verhbrno, verhwsno,
+				brnolist, wsnolist, timer);
 	}
 
-	public ClientConnection(ConcurrentHashMap<String, String> map, List<String> brnolist, List<String> wsnolist, Timer timer) {
+	public ClientConnection(ConcurrentHashMap<String, String> map, List<String> brnolist, List<String> wsnolist,
+			Timer timer) {
 		String rmthost = map.get("svrsubport.svrip");
 		String localhost = map.get("svrsubport.localip");
 		this.verhbrno = map.get("svrsubport.verhbrno");
@@ -121,8 +135,8 @@ public class ClientConnection extends ChannelDuplexHandler implements Runnable {
 		this.timer_ = timer;
 	}
 
-	public ClientConnection(InetSocketAddress _rmtaddr, InetSocketAddress _localaddr, String verhbrno, String verhwsno, List<String> brnolist,
-			List<String> wsnolist, Timer timer) {
+	public ClientConnection(InetSocketAddress _rmtaddr, InetSocketAddress _localaddr, String verhbrno, String verhwsno,
+			List<String> brnolist, List<String> wsnolist, Timer timer) {
 		this.rmtaddr = _rmtaddr;
 		this.localaddr = _localaddr;
 		this.verhbrno = verhbrno;
@@ -167,9 +181,9 @@ public class ClientConnection extends ChannelDuplexHandler implements Runnable {
 					if (!future.isSuccess()) {// if is not successful, reconnect
 						future.channel().close();
 						log.debug("seceduleConnect");
-						//20200105
+						// 20200105
 						clientMessageBuf.clear();
-						//----
+						// ----
 						try {
 							Thread.sleep(_wait);
 						} catch (InterruptedException e) {
@@ -224,9 +238,9 @@ public class ClientConnection extends ChannelDuplexHandler implements Runnable {
 
 	public void connectionEstablished() {
 		log.debug("connectionEstablished()");
-		//20200105
+		// 20200105
 		clientMessageBuf.clear();
-		//----
+		// ----
 	}
 
 	@Override
@@ -272,7 +286,7 @@ public class ClientConnection extends ChannelDuplexHandler implements Runnable {
 	private List<String> cnvS004toR0061(byte[] src) {
 		List<String> rtnList = null;
 		byte[] rtn = src;
-
+		byte[] fas = src;
 		if (src != null && src.length > 47) {
 			try {
 				if (new String(src, 38, 4, CharsetUtil.UTF_8).equals("S004")) {
@@ -280,21 +294,25 @@ public class ClientConnection extends ChannelDuplexHandler implements Runnable {
 					if (!this.S004Start) {
 						this.S004Start = true;
 ///						this.s004tele = new S004(brnoList.get(0), wsnoList.get(0));
-						//20200215
+						// 20200215
 						this.showBrno = new String(src, src.length - 4, 4).trim();
 						this.s004tele = new S004(this.showBrno, wsnoList.get(0));
-						//---
+						// ---
 					} else if (src[32] == (byte) '1') {
 						this.S004Start = false;
 					}
+					fas = new byte[src.length - 12];
+					System.arraycopy(src, 12, fas, 0, src.length - 12);
+					faslog.debug(String.format(fasRecvPtrn, fas.length,new String(fas)));
 					log.debug("S004 {}telegram", src[32] == (byte) '0' ? "" : "last ");
 					rtn = new byte[src.length - 47];
+					// 把電文header切掉
 					System.arraycopy(src, 47, rtn, 0, src.length - 51);
 					this.s004tele.setData(rtn);
-					//20200212 MatsudairaSyume
-					//  check brno 999 for broadcast, other number for peer branch 
+					// 20200212 MatsudairaSyume
+					// check brno 999 for broadcast, other number for peer branch
 					log.debug("brno 0 ={} ==>[{}]", brnoList.get(0), showBrno);
-					//----
+					// ----
 					log.debug("wsno 0 ={}", wsnoList.get(0));
 					log.debug("getMrktdt()={}", new String(this.s004tele.getMrktdt()));
 					log.debug("getSysdt={}", new String(this.s004tele.getSysdt()));
@@ -304,15 +322,46 @@ public class ClientConnection extends ChannelDuplexHandler implements Runnable {
 					if (this.S004Start == false) {
 						log.debug("RateRecList={}", this.s004tele.getRateRecList().size());
 						rtnList = this.s004tele.getRateRecList();
+						this.rateType = "0";
 						this.s004tele = null;
 					}
 				}
+				// SUN test
+				else if (StringUtils.equals(new String(src, 38, 4, CharsetUtil.UTF_8), "T018")) {
+					log.debug("TOTA MSGID = T018, TOTA ={}", new String(src, 38, 4, CharsetUtil.UTF_8));
+					// T018 telegram
+					if (!this.T018Start) {
+						this.T018Start = true;
+						this.showBrno = new String(src, 12, 3).trim();
+						this.T018tele = new T018(this.showBrno, wsnoList.get(0));
+					} else if (src[32] == (byte) '1') {
+						this.T018Start = false;
+					}
+					fas = new byte[src.length - 12];
+					System.arraycopy(src, 12, fas, 0, src.length - 12);
+					faslog.debug(String.format(fasRecvPtrn, fas.length,new String(fas)));
+					log.debug("T018 {}telegram", src[32] == (byte) '0' ? "" : "last ");
+					rtn = new byte[src.length - 47];
+					// 把電文header切掉
+					System.arraycopy(src, 47, rtn, 0, src.length - 47);
+					this.T018tele.setData(rtn);
+					if (this.T018Start == false) {
+						log.debug("RateRecList={}", this.T018tele.getRateRecList().size());
+						rtnList = this.T018tele.getRateRecList();
+						this.rateType = "1";
+						this.T018tele = null;
+					}
+				}
+				// =========
+
 			} catch (Exception e) {
+				e.printStackTrace();
 				log.debug("not S004 telegram");
 			}
 		}
 		return rtnList;
 	}
+
 	private byte[] remove03(byte[] source) {
 		if (source[source.length - 1] == 0x03) {
 			source = ArrayUtils.subarray(source, 0, source.length - 1);
@@ -320,21 +369,23 @@ public class ClientConnection extends ChannelDuplexHandler implements Runnable {
 		}
 		return source;
 	}
-	
-	//20200105
+
+	// 20200105
 	private int fromByteArray(byte[] bytes) {
-	    int r = 0;
-	    for (byte b: bytes)
-	        r =  (r * 100) + ((((b >> 4)& 0xf) * 10 + (b & 0xf)));
-	    return r;
+		int r = 0;
+		for (byte b : bytes)
+			r = (r * 100) + ((((b >> 4) & 0xf) * 10 + (b & 0xf)));
+		return r;
 	}
-	//----
+
+	// ----
 	private void HostS004SndHost(int seq, String brno, String wsno, String mrkttm) {
 		String S004TITAStr = String.format(
 				"\u000f\u000f\u000f\u0000\u0001d\u0001%03d\u000f\u000f%03d%02d0\u0000006100000000000000000FU0700C8400000000000000000000000000000000000000000000000014000000000000000000000001000000000000000000000%03d000000001%4s?\u0004",
 				seq, Integer.parseInt(brno), Integer.parseInt(wsno), Integer.parseInt(brno), mrkttm);
 		byte[] S004TITA = new byte[S004TITAStr.length()];
 		System.arraycopy(S004TITAStr.getBytes(), 0, S004TITA, 0, S004TITAStr.getBytes().length);
+		faslog.debug(String.format(fasSendPtrn, S004TITAStr.length(),S004TITAStr));
 		try {
 			sendBytes(S004TITA);
 		} catch (IOException e) {
@@ -351,6 +402,13 @@ public class ClientConnection extends ChannelDuplexHandler implements Runnable {
 	@Override
 	public void channelActive(ChannelHandlerContext ctx) throws Exception {
 		log.debug(clientId + "channel active");
+		Channel currConn = ctx.channel();
+		InetSocketAddress localsock = (InetSocketAddress) currConn.localAddress();
+		InetSocketAddress remotsock = (InetSocketAddress) currConn.remoteAddress();
+		MDC.put("SERVER_ADDRESS", (String) remotsock.getAddress().toString());
+		MDC.put("SERVER_PORT", String.valueOf(remotsock.getPort()));
+		MDC.put("LOCAL_ADDRESS", (String) localsock.getAddress().toString());
+		MDC.put("LOCAL_PORT", String.valueOf(localsock.getPort()));
 		this.currentContext = ctx;
 		this.clientChannel = this.currentContext.channel();
 		publishActiveEvent();
@@ -362,18 +420,18 @@ public class ClientConnection extends ChannelDuplexHandler implements Runnable {
 		log.debug(clientId + " channelInactive");
 		publishInactiveEvent();
 		this.clientChannel = null;
-		//20200105
+		// 20200105
 		this.clientMessageBuf.clear();
-		//----
+		// ----
 		super.channelInactive(ctx);
 	}
 
 	@Override
 	public void channelRead(ChannelHandlerContext ctx, Object msg) {
 		log.debug(clientId + " channelRead");
-		//20200105
-		byte [] telmbyteary = null;
-		//----
+		// 20200105
+		byte[] telmbyteary = null;
+		// ----
 		try {
 			if (msg instanceof ByteBuf) {
 				ByteBuf buf = (ByteBuf) msg;
@@ -384,56 +442,74 @@ public class ClientConnection extends ChannelDuplexHandler implements Runnable {
 					log.debug("readableBytes={} barray={}", size, buf.hasArray());
 					if (buf.isReadable() && !buf.hasArray()) {
 						// it is long raw telegram
-						//20200105
+						// 20200105
 						log.debug("readableBytes={} barray={}", buf.readableBytes(), buf.hasArray());
 						if (clientMessageBuf.readerIndex() > (clientMessageBuf.capacity() / 2)) {
 							clientMessageBuf.discardReadBytes();
 							log.debug("adjustment clientMessageBuf readerindex ={}" + clientMessageBuf.readableBytes());
 						}
-						//----
-						synchronized (this.readMutex) {
-							//20200105
+						// ----
+//						synchronized (this.readMutex) {
+							// 20200105
 							size = buf.readableBytes();
 							clientMessageBuf.writeBytes(buf);
-							log.debug("clientMessageBuf.readableBytes={}",clientMessageBuf.readableBytes());
+							log.debug("clientMessageBuf.readableBytes={}", clientMessageBuf.readableBytes());
 							while (clientMessageBuf.readableBytes() >= 12) {
 								byte[] lenbary = new byte[3];
 								clientMessageBuf.getBytes(clientMessageBuf.readerIndex() + 3, lenbary);
-								log.debug("clientMessageBuf.readableBytes={} size={}",clientMessageBuf.readableBytes(), fromByteArray(lenbary));
+								log.debug("clientMessageBuf.readableBytes={} size={}", clientMessageBuf.readableBytes(),
+										fromByteArray(lenbary));
 								if ((size = fromByteArray(lenbary)) > 0 && size <= clientMessageBuf.readableBytes()) {
 									telmbyteary = new byte[size];
 									clientMessageBuf.readBytes(telmbyteary);
-									log.debug("read {} byte(s) from clientMessageBuf after {}", size, clientMessageBuf.readableBytes());
+									log.debug("read {} byte(s) from clientMessageBuf after {}", size,
+											clientMessageBuf.readableBytes());
 									getSeqStr = new String(telmbyteary, 7, 3);
 									FileUtils.writeStringToFile(seqNoFile, getSeqStr, Charset.defaultCharset());
 									List<String> rlist = cnvS004toR0061(remove03(telmbyteary));
 									if (rlist != null && rlist.size() > 0) {
+										List<String> targetaddr = null;
+										if (!this.showBrno.equals("999")) {
+										try {
+											log.debug("select ip from TB_AUDEVPRM by BRNO = {} and TYPE = {}",this.showBrno,this.rateType);
+											GwCfgDao GwCfgDao = new GwCfgDao();
+											targetaddr = GwCfgDao.SELECTTB_AUDEVPRM(this.rateType, this.showBrno);
+										} catch (Throwable e) {
+											log.debug(e.getMessage());
+										}
+										}
 										for (String l : rlist) {
 											telmbyteary = l.getBytes();
 											buf = channel_.alloc().buffer().writeBytes(telmbyteary);
-											//20200215
+											// 20200215
 											// modofy for brodcst dnd F0304
-											publishactorSendmessage(this.showBrno, buf);
-											//----
+											publishactorSendmessage(this.showBrno, buf,targetaddr);
+											// ----
 										}
-										try {
-											//write S004 TITA to HOST
-											int seqno = Integer.parseInt(
-													FileUtils.readFileToString(seqNoFile, Charset.defaultCharset())) + 1;
-											if (seqno > 999) {
-												seqno = 0;
+										//  SUN test
+										if (new String(remove03(telmbyteary), 38, 4, CharsetUtil.UTF_8).equals("S004")) {
+											try {
+												// write S004 TITA to HOST
+												int seqno = Integer.parseInt(
+														FileUtils.readFileToString(seqNoFile, Charset.defaultCharset()))
+														+ 1;
+												if (seqno > 999) {
+													seqno = 0;
+												}
+												HostS004SndHost(seqno, verhbrno, verhwsno, curMrkttm);
+												FileUtils.writeStringToFile(seqNoFile, Integer.toString(seqno),
+														Charset.defaultCharset());
+											} catch (Exception e) {
+												log.warn(e.getMessage());
 											}
-											HostS004SndHost(seqno, verhbrno, verhwsno, curMrkttm);
-											FileUtils.writeStringToFile(seqNoFile, Integer.toString(seqno), Charset.defaultCharset());
-										} catch (Exception e) {
-											log.warn(e.getMessage());
 										}
+										// =============
 									}
 								} else
 									break;
-								
+
 							}
-						}
+//						}
 					}
 				}
 			} else // if
@@ -467,9 +543,9 @@ public class ClientConnection extends ChannelDuplexHandler implements Runnable {
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
 		log.debug(clientId + " exceptionCaught=" + cause.getMessage());
 		publishInactiveEvent();
-		//20200105
+		// 20200105
 		this.clientMessageBuf.clear();
-		//----
+		// ----
 		ctx.close();
 	}
 
@@ -524,26 +600,26 @@ public class ClientConnection extends ChannelDuplexHandler implements Runnable {
 		log.debug("-publish end-");
 	}
 
-	//20200215
+	// 20200215
 	// modify for broadcasting and F0304
-	public void publishactorSendmessage(String actorId, Object eventObj) {
+	public void publishactorSendmessage(String actorId, Object eventObj,List<String> targetaddr) {
 		log.debug(actorId + " publish message to listener");
 		for (ActorStatusListener listener : actorStatusListeners) {
 			log.debug(actorId + " publish message to listener {}", listener);
-			//20200215
+			// 20200215
 			if (actorId.equals("999")) {
 				log.debug("{} publish message to ALL IP", actorId);
 			} else {
 				if (this.brnoList.indexOf(actorId.trim()) > -1)
 					log.debug("{} publish message to target IP", actorId);
 			}
-			//----
-			listener.actorSendmessage(actorId, eventObj);
+			// ----
+			listener.actorSendmessage(actorId, eventObj ,targetaddr);
 		}
 
 		log.debug("-publish end-");
 	}
-    //----
+	// ----
 	// end for ChannelDuplexHandler function
 
 	public static void sleep(int t) {

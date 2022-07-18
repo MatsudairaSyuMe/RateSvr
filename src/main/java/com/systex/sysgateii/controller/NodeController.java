@@ -9,16 +9,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.systex.sysgateii.util.DataConvert;
-import com.systex.sysgateii.util.StrUtil;
-import com.systex.sysgateii.controller.NodeController;
 import com.systex.sysgateii.client.ClientConnection;
 //import com.fstop.gateway.server.ServerConsumer;
 //import com.fstop.gateway.server.ServerProducer;
 import com.systex.sysgateii.comm.Constants;
-import com.systex.sysgateii.listener.ActorStatusListener;
 import com.systex.sysgateii.listener.MessageListener;
 import com.systex.sysgateii.server.ServerProducer;
+import com.systex.sysgateii.util.DataConvert;
+import com.systex.sysgateii.util.LogUtil;
+import com.systex.sysgateii.util.StrUtil;
 
 public class NodeController implements MessageListener<byte[]>, Runnable {
 	private static Logger log = LoggerFactory.getLogger(NodeController.class);
@@ -160,7 +159,7 @@ public class NodeController implements MessageListener<byte[]>, Runnable {
 				port = Integer.parseInt(map.get("system.port"));
 				log.info("port=" + port);
 				String tmps = map.get("boards.board.ip");
-				log.info("boards.board.ip=" + tmps);
+				log.info("boards.board.ip=" + LogUtil.vaildLog(tmps));
 				if (tmps.startsWith("["))
 					tmps = tmps.substring(1);
 				if (tmps.endsWith("]"))
@@ -173,6 +172,9 @@ public class NodeController implements MessageListener<byte[]>, Runnable {
 				wsnos.add(addLeftZeroForNum(98, 4));
 
 				for (String cs : localary) {
+					if (cs != null && cs.trim().length() == 0) {
+						continue;
+					}
 					producer.getIpList().add(cs.trim());
 					String[] p = cs.trim().split("\\.");
 					wsnos.add(addLeftZeroForNum(Integer.valueOf(p[3]), 4));
@@ -184,9 +186,13 @@ public class NodeController implements MessageListener<byte[]>, Runnable {
 				if (tmps.endsWith("]"))
 					tmps = tmps.substring(0, tmps.length() - 1);
 				localary = tmps.split(",");
-				for (String cs : localary)
+				for (String cs : localary) {
+					if (cs != null && cs.trim().length() == 0) {
+						continue;
+					}
 					brnos.add(cs.trim());
-				//20200215
+				}
+				// 20200215
 				producer.getBrnoList().addAll(brnos);
 				for (int j = 0; j < brnos.size(); j++) {
 					if (producer.getBrnoaddrGrp().containsKey(brnos.get(j)))
@@ -197,7 +203,7 @@ public class NodeController implements MessageListener<byte[]>, Runnable {
 						producer.getBrnoaddrGrp().put(brnos.get(j), subbrnoList);
 					}
 				}
-				//----
+				// ----
 				ClientConnection conn = new ClientConnection(map, brnos, wsnos, new Timer());
 
 				conn.addActorStatusListener(producer);

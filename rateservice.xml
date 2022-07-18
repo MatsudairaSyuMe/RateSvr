@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	
+<Resource name="jdbc/BIS_DB"
+		url="jdbc:db2://10.1.6.220:50100/BISDB" username="BISAP"
+		password="P@ssw0rd" auth="Container" type="javax.sql.DataSource"
+		maxActive="8" maxIdle="2" maxWait="-1" />
+	<system>
+		<ip>192.168.30.59</ip>
+		<port>12000</port>
+		<logpath>/gwlog/ratesvr</logpath>
+		<user>scotthong</user>
+		<auid>2</auid>
+	</system>
+	<!-- <svrsubport>
+		<svrip>192.168.14.91</svrip>
+		<svrport>15000</svrport>
+		<localip>192.168.14.129</localip>
+		<localport>15331</localport>
+		<verhbrno>983</verhbrno>
+		<verhwsno>80</verhwsno>
+	</svrsubport> -->
+</configuration>

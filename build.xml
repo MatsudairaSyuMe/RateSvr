@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--SYSTEX Co. MatsudairaSyume 20201223 -->
+<project basedir="." default="dist" name="ratesvr">
+	<!--主要的系統環境屬性 -->
+	<property environment="env"/>
+	<property name="java.home" value="${env.JAVA_HOME}"/>
+	<property name="ant.home" value="${env.ANT_HOME}"/>
+	<!--主要的app環境屬性 -->
+	<property name="app.name" value="com.systex.sysgateii.ratesvr-1.0"/>
+	<property name="app.jar" value="${app.name}.jar"/>
+	<property name="app.copyright" value=" Copyright (c) 20201223 SYSTEX Co. All rights reserved."/>
+	<!--app中src的屬性 -->
+	<property name="src.dir" value="src"/>
+	<property name="src.main" value="${src.dir}/main"/>
+	<property name="src.config" value="${src.dir}/resources"/>
+	<property name="src.classes" value="${src.dir}/classes"/>
+	<!--app用到的lib -->
+	<property name="lib.dir" value="libs"/>
+	<!--app的build目錄中 -->
+	<property name="build.dir" value="build"/>
+	<property name="build.classes" value="${build.dir}/classes"/>
+	<property name="build.lib" value="${build.dir}/libs"/>
+	<property name="build.bin" value="${build.dir}/bin"/>
+	<property name="build.config" value="${build.dir}/main/resources"/>
+	<property name="build.docs" value="${build.dir}/docs"/>
+	<path id="classpath">
+		<pathelement location="${build.classes}"/>
+		<pathelement path="${java.home}/lib/tools.jar"/>
+		<!--lib庫 -->
+		<fileset dir="${lib.dir}">
+			<include name="*.jar"/>
+		</fileset>
+	</path>
+	<patternset id="support.files">
+		<include name="**/*.xml"/>
+		<include name="**/*.ini"/>
+		<include name="**/*.INI"/>
+		<include name="**/*.bin"/>
+	</patternset>
+	<patternset id="jar.files">
+		<include name="**/*.zip"/>
+		<include name="**/*.jar"/>
+	</patternset>
+	<target name="clean" >
+	<delete dir="${build.dir}" failonerror="false"/>
+	</target>
+	<target name="init">
+		<!--清除以前目錄 -->
+		<delete dir="${build.dir}" failonerror="false"/>
+		<!--準備目錄 -->
+		<mkdir dir="${build.dir}"/>
+		<mkdir dir="${build.classes}"/>
+		<mkdir dir="${build.lib}"/>
+		<mkdir dir="${build.bin}"/>
+		<mkdir dir="${build.config}"/>
+		<mkdir dir="${build.docs}"/>
+	</target>
+	<target depends="init" description="Compile source tree java files" name="build">
+		<javac encoding="utf8" destdir="${build.classes}" includeAntRuntime="false" source="1.8" srcdir="${src.main}" target="1.8">
+			<classpath refid="classpath"/>
+		</javac>
+		<copy todir="${build.classes}">
+			<fileset dir="${src.main}">
+				<patternset refid="support.files"/>
+			</fileset>
+		</copy>
+	</target>
+	<target name="jars">
+		<!-- 20200930 MatsudairaSyume -->
+<!--		<jar basedir="${build.classes}" destfile="${build.lib}/${app.jar}" includes="${build.classes}/**"/>-->
+		<jar basedir="${build.classes}" jarfile="${build.lib}/${app.jar}" />
+	</target>
+	<target depends="jars" description="creates the API documentation" name="javadocs">
+		<copy todir="${build.docs}">
+			<fileset dir="${docs.dir}"/>
+		</copy>
+		<javadoc author="true" defaultexcludes="yes" destdir="${build.docs.api}" packagenames="com.systex.sysgateii.*" sourcepath="${src.main}" use="true" version="true" windowtitle="Docs API">
+			<doctitle>
+				<![CDATA[<h1>hello ant Docs API</h1>]]>
+			</doctitle>
+			<bottom>
+				<![CDATA[<i>${app.copyright}</i>]]>
+			</bottom>
+			<tag description="To do:" name="todo" scope="all"/>
+		</javadoc>
+	</target>
+	<target depends="jars" name="dist">
+		<copy todir="${build.lib}">
+			<fileset dir="${lib.dir}/">
+				<patternset refid="jar.files"/>
+			</fileset>
+		</copy>
+	</target>
+</project>

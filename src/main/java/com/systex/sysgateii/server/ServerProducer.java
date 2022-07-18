@@ -5,16 +5,18 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
 import com.systex.sysgateii.comm.Constants;
-import com.systex.sysgateii.comm.TxIdleStateHandler;
+//import com.systex.sysgateii.comm.TxIdleStateHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
@@ -33,14 +35,20 @@ import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
+import io.netty.handler.timeout.IdleStateHandler;  //20220709 MataudairaSyuMe
 import io.netty.util.CharsetUtil;
 
 import com.systex.sysgateii.util.StrUtil;
 import com.systex.sysgateii.listener.ActorStatusListener;
+import com.systex.sysgateii.ratesvr.dao.GwCfgDao;
+
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.time.LocalDate;
+import java.time.chrono.MinguoDate;
+import java.time.format.DateTimeFormatter;
 
 /**
  * <pre>
@@ -77,11 +85,16 @@ public class ServerProducer extends ChannelDuplexHandler // ChannelInboundHandle
 	ChannelFuture listenFuture;
 	ServerBootstrap bootStrap;
 	Channel listenChannel;
-	TxIdleStateHandler idleStateHandler;
+	private IdleStateHandler idleStateHandler;  //20220712 MatsjudairaSyuMe
 	ChannelHandlerContext currentContext;
 	private String rtnHdrfmt = "TD%03d%02d00000%04d0000";
-	private String rtnTimefmt = "TD%03d%02d0001T02460001000000000000000000%15s000%03d%02d000TD0010000%04d1                  0                  000000000%8s00000002%8s%8s%8s%8s%8s%8s010101%8s%8s%8s%8s%8s%8s";
-	private String rtnC25 = "TD981410011E0164    3E013                                                                                                         [SCTL]                            ";
+	private String rtnTimefmt = "TD%03d%02d0001T02460001000000000000000000%15s000%03d%02d000TD0010000%04d1                    0                    000000000%8s00000002%8s%8s%8s%8s%8s%8s010101%8s%8s%8s%8s%8s%8s";
+//20220707 MatsudairaSyuMe
+	//	private String rtnC25 = "TD981410011E0164    3E013                                                                                                         [SCTL]                            ";
+	private String rtnC25 = "TD%02d1410011E0164    3E013                                                                                                         [SCTL]                            ";
+	//20220707 MatsudairaSyuMe
+	private String currentBRWS = "";
+	//----
 	// allowed client ip list
 	List<String> ipList = new ArrayList<String>();
 	//2020015
@@ -89,7 +102,6 @@ public class ServerProducer extends ChannelDuplexHandler // ChannelInboundHandle
 	ConcurrentHashMap<String, List<String>> brnoaddrGrp = new ConcurrentHashMap<String, List<String>>();
 	//----
 	List<ChannelHandlerContext> sessionList = new ArrayList<ChannelHandlerContext>();
-
 	public ChannelHandlerContext getCurrentContext() {
 		return currentContext;
 	}
@@ -240,7 +252,11 @@ public class ServerProducer extends ChannelDuplexHandler // ChannelInboundHandle
 							// ---------------- mark 20190820
 
 							// remote address /0:0:0:0:0:0:0:1:10335
-							String clientIp = ch.remoteAddress().getAddress().getHostAddress();
+							String socketChannel = ch.toString();
+							int start = socketChannel.lastIndexOf("R:/") + 3;
+							int end = socketChannel.lastIndexOf(":");
+							String clientIp = socketChannel.substring(start, end);
+//							String clientIp = ch.remoteAddress().getAddress().getHostAddress();
 							log.debug("client from " + clientIp);
 							if (!isValidClientIp(clientIp)) {
 								log.debug("Invalid client ip =" + clientIp);
@@ -249,10 +265,11 @@ public class ServerProducer extends ChannelDuplexHandler // ChannelInboundHandle
 							}
 
 							// Do not call await() inside ChannelHandler
-							// ch.pipeline().addLast("idleStateHandler", new IdleStateHandler(keepAlive, 0,
-							// idleTimeout));
+							//ch.pipeline().addLast("idleStateHandler", new IdleStateHandler(keepAlive, 0,
+							//idleTimeout));
 //							idleStateHandler = new TxIdleStateHandler(0, keepAlive, idleTimeout);
 //							ch.pipeline().addLast("idleStateHandler", idleStateHandler);
+							ch.pipeline().addLast("idleStateHandler", new IdleStateHandler(0, 0, 120, TimeUnit.SECONDS));
 							ch.pipeline().addLast("log", new LoggingHandler(ServerProducer.class, LogLevel.INFO)); // 測試用
 							ch.pipeline().addLast(getHandler());
 
@@ -260,7 +277,8 @@ public class ServerProducer extends ChannelDuplexHandler // ChannelInboundHandle
 					}).option(ChannelOption.SO_BACKLOG, 128).option(ChannelOption.SO_REUSEADDR, true)
 					.childOption(ChannelOption.SO_KEEPALIVE, true).childOption(ChannelOption.SO_LINGER, 0)
 					.childOption(ChannelOption.SO_REUSEADDR, true).childOption(ChannelOption.SO_RCVBUF, bufferSize)
-					.childOption(ChannelOption.SO_SNDBUF, bufferSize).childOption(ChannelOption.TCP_NODELAY, true)
+				.childOption(ChannelOption.SO_SNDBUF, bufferSize).childOption(ChannelOption.TCP_NODELAY, true)
+//20220709					.childOption(ChannelOption.SO_SNDBUF, bufferSize).childOption(ChannelOption.TCP_NODELAY, false)
 					.childOption(ChannelOption.ALLOW_HALF_CLOSURE, false)
 					/**/
 					.childOption(ChannelOption.RCVBUF_ALLOCATOR, new AdaptiveRecvByteBufAllocator(32768, 32768, 32768));
@@ -317,7 +335,7 @@ public class ServerProducer extends ChannelDuplexHandler // ChannelInboundHandle
 	}
 
 	public ChannelFuture writeMessage(byte[] msg) {
-		log.debug(serverId + " write byte message {}", msg.length);
+		log.debug("serverId=[{}] write byte message {}", serverId, msg.length);
 		ByteBuf req = Unpooled.wrappedBuffer(msg);
 		log.debug("msg send");
 
@@ -338,7 +356,7 @@ public class ServerProducer extends ChannelDuplexHandler // ChannelInboundHandle
 			for (String s : ipList) {
 //				log.debug("lpList{} ==> check {}", s, ip);
 				if (StrUtil.isNotEmpty(s) && ip.startsWith(s)) {
-					log.debug("lpList ==> check {} inlist ", s, ip);
+					log.debug("lpList{} ==> check {} inlist ", s, ip);
 					return true;
 				}
 			}
@@ -426,10 +444,29 @@ public class ServerProducer extends ChannelDuplexHandler // ChannelInboundHandle
 	@Override
 	public void channelActive(ChannelHandlerContext ctx) throws Exception {
 		log.debug(serverId + " channelActive");
-
+//		InetSocketAddress insocket = (InetSocketAddress) ctx.channel().remoteAddress();
+		String socketChannel = ctx.channel().toString();
+		int start = socketChannel.lastIndexOf("R:/") + 3;
+		int end = socketChannel.lastIndexOf(":");
+		String clientIP = socketChannel.substring(start, end);
+//        String clientIP = insocket.getAddress().getHostAddress();
+		if(clientIP !=null) {
+			try {
+				GwCfgDao GwCfgDao = new GwCfgDao();
+				GwCfgDao.UPDATETB_AUDEVSTS(clientIP, "2");
+			} catch (Throwable e) {
+				e.printStackTrace();
+			}
+		}
 		isConnected.set(true);
 		// 記錄目前的 ChannelHandlerContext
 		// ------
+		//202207011 MatsudairaSyuMe
+		this.currentBRWS = this.brnoList.get(this.ipList.indexOf(clientIP));
+//		this.idleStateHandler = new IdleStateHandler(120, 0, 0, TimeUnit.SECONDS);
+//		ctx.pipeline().addLast("idleStateHandler", idleStateHandler);
+		log.info("curentBRWS=[{}]", this.currentBRWS);
+		//----
 		sessionList.add(ctx);
 		log.debug(serverId + " channelActive sessionList size={} ", sessionList.size());
 		// -----
@@ -442,8 +479,22 @@ public class ServerProducer extends ChannelDuplexHandler // ChannelInboundHandle
 	public void channelInactive(ChannelHandlerContext ctx) throws Exception {
 		log.debug(serverId + " channelInactive");
 		// 20191005
+//		InetSocketAddress insocket = (InetSocketAddress) ctx.channel().remoteAddress();
+		String socketChannel = ctx.channel().toString();
+		int start = socketChannel.lastIndexOf("R:/") + 3;
+		int end = socketChannel.lastIndexOf(":");
+		String clientIP = socketChannel.substring(start, end);
+//		String clientIP = insocket.getAddress().getHostAddress();
 		sessionList.remove(ctx);
 		log.debug(serverId + " channelInActive sessionList size={} ", sessionList.size());
+        if(clientIP !=null) {
+			try {
+				GwCfgDao GwCfgDao = new GwCfgDao();
+				GwCfgDao.UPDATETB_AUDEVSTS(clientIP, "1"); //20220718 MAtsudairaSyuMe change inactive to 1
+			} catch (Throwable e) {
+				e.printStackTrace();
+			}
+		}
 		// 20191005
 		publishInactiveEvent();
 		isConnected.set(false);
@@ -452,7 +503,16 @@ public class ServerProducer extends ChannelDuplexHandler // ChannelInboundHandle
 
 	@Override
 	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-		log.debug(serverId + " channelRead");
+		//20220707 MatsudairaSyuMe
+		//log.debug(serverId + " channelRead");
+		int brno = 984;
+		int wrkno = 98;
+		if (this.currentBRWS.trim().length() > 0) {
+			brno = Integer.valueOf(this.currentBRWS.substring(0, 3));
+			wrkno = Integer.valueOf(this.currentBRWS.substring(5, 7));
+		}
+		log.debug("[{}] channelRead brno=[{}] wrkno=[{}]", serverId, brno, wrkno);
+		//--
 		try {
 			if (msg instanceof ByteBuf) {
 				// UnpooledUnsafeDirectByteBuf bf = (UnpooledUnsafeDirectByteBuf) msg;
@@ -465,11 +525,11 @@ public class ServerProducer extends ChannelDuplexHandler // ChannelInboundHandle
 					String body = new String(req, CharsetUtil.UTF_8).substring(0, req.length);
 					log.debug("server receive order : " + body);
 					if (body.equalsIgnoreCase("TD000000000000200000")) {
-						writeMessage(String.format(rtnHdrfmt, 984, 98, 20), CharsetUtil.UTF_8);
+						writeMessage(String.format(rtnHdrfmt, brno, wrkno, 20), CharsetUtil.UTF_8);
 					} else if (body.startsWith("CU") && body.endsWith("STATION OPEN00")) {
 						writeMessage(String
-								.format(rtnTimefmt, 984, 98, convertcurTWDate("西元 yyyy 年 MM 月 dd 日", "0yyyMMddHHmm0ss"),
-										984, 98, 1906, convertcurTWDate("西元 yyyy 年 MM 月 dd 日", "0yyyMMdd"),
+								.format(rtnTimefmt, brno, wrkno, convertcurTWDate("西元 yyyy 年 MM 月 dd 日", "0yyyMMddHHmm0ss"),
+										brno, wrkno, 1906, convertcurTWDate("西元 yyyy 年 MM 月 dd 日", "0yyyMMdd"),
 										convertaddDayTWDate("西元 yyyy 年 MM 月 dd 日", "0yyyMMdd", 1),
 										convertaddDayTWDate("西元 yyyy 年 MM 月 dd 日", "0yyyMMdd", 2),
 										convertaddDayTWDate("西元 yyyy 年 MM 月 dd 日", "0yyyMMdd", -1),
@@ -483,7 +543,9 @@ public class ServerProducer extends ChannelDuplexHandler // ChannelInboundHandle
 										convertaddDayTWDate("西元 yyyy 年 MM 月 dd 日", "0yyyMMdd", -4))
 								.getBytes());
 					} else if (body.contains("CU700C25")) {
-						writeMessage(rtnC25.getBytes());
+						//20220707 MAtsudairaSyuMe
+//						writeMessage(rtnC25.getBytes());
+						writeMessage(String.format(rtnC25, wrkno).getBytes());
 					}
 				} else {
 					log.debug("{}: capacity={} readableBytes={} barray={} nio={} can't be read", serverId,
@@ -506,15 +568,34 @@ public class ServerProducer extends ChannelDuplexHandler // ChannelInboundHandle
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
 		log.debug(serverId + " exceptionCaught=" + cause.getMessage());
+//		InetSocketAddress insocket = (InetSocketAddress) ctx.channel().remoteAddress();
+		String socketChannel = ctx.channel().toString();
+		int start = socketChannel.lastIndexOf("R:/") + 3;
+		int end = socketChannel.lastIndexOf(":");
+		String clientIP = socketChannel.substring(start, end);
+//        String clientIP = insocket.getAddress().getHostAddress();
+        if(clientIP !=null) {
+			try {
+				GwCfgDao GwCfgDao = new GwCfgDao();
+				GwCfgDao.UPDATETB_AUDEVSTS(clientIP, "1"); //20220718 MAtsudairaSyuMe change inactive to 1
+			} catch (Throwable e) {
+				e.printStackTrace();
+			}
+		}
 		publishInactiveEvent();
 		ctx.close();
 		// super.exceptionCaught(ctx, cause);
-
 	}
 
 	@Override
 	public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-		log.debug(serverId + " userEventTriggered");
+		//20220718 MatsudairaSyuuMe
+		String socketChannel = ctx.channel().toString();
+		int start = socketChannel.lastIndexOf("R:/") + 3;
+		int end = socketChannel.lastIndexOf(":");
+		String clientIP = socketChannel.substring(start, end);
+		String triggeredBRWS = this.brnoList.get(this.ipList.indexOf(clientIP));
+		log.info("serverid=[{}] triggeredBRWS=[{}] userEventTriggered", serverId, triggeredBRWS);
 		if (evt instanceof IdleStateEvent) {
 			IdleStateEvent e = (IdleStateEvent) evt;
 			if (e.state() == IdleState.READER_IDLE) {
@@ -524,10 +605,32 @@ public class ServerProducer extends ChannelDuplexHandler // ChannelInboundHandle
 			} else if (e.state() == IdleState.ALL_IDLE) {
 				log.debug(serverId + " ALL_IDLE");
 			}
-
-			// 通知斷線
+			int brno = 984;
+			int wrkno = 98;
+			if (triggeredBRWS.length() > 0) {
+				brno = Integer.valueOf(triggeredBRWS.substring(0, 3));
+				wrkno = Integer.valueOf(triggeredBRWS.substring(5, 7));
+			}
+			String sndStr = null;
+			sndStr = String
+					.format(rtnTimefmt, brno, wrkno, convertcurTWDate("西元 yyyy 年 MM 月 dd 日", "0yyyMMddHHmm0ss"),
+							brno, wrkno, 1906, convertcurTWDate("西元 yyyy 年 MM 月 dd 日", "0yyyMMdd"),
+							convertaddDayTWDate("西元 yyyy 年 MM 月 dd 日", "0yyyMMdd", 1),
+							convertaddDayTWDate("西元 yyyy 年 MM 月 dd 日", "0yyyMMdd", 2),
+							convertaddDayTWDate("西元 yyyy 年 MM 月 dd 日", "0yyyMMdd", -1),
+							convertlastDayofPreviousMonTWDate(), convertlastDayofNextMonTWDate(),
+							convertlastDayofNextMonTWDate(),
+							convertaddDayTWDate("西元 yyyy 年 MM 月 dd 日", "0yyyMMdd", 3),
+							convertaddDayTWDate("西元 yyyy 年 MM 月 dd 日", "0yyyMMdd", 4),
+							convertaddDayTWDate("西元 yyyy 年 MM 月 dd 日", "0yyyMMdd", 5),
+							convertaddDayTWDate("西元 yyyy 年 MM 月 dd 日", "0yyyMMdd", -2),
+							convertaddDayTWDate("西元 yyyy 年 MM 月 dd 日", "0yyyMMdd", -3),
+							convertaddDayTWDate("西元 yyyy 年 MM 月 dd 日", "0yyyMMdd", -4));
+			log.debug("serverId=[{}] userEventTriggered [{}]", serverId, sndStr);
+			writeMessageWithContext(ctx, sndStr, CharsetUtil.UTF_8); //20220718 writeMessage change to use writeMessageWithContext
+			//----
 			publishInactiveEvent();
-			ctx.close();
+			//ctx.close();
 		}
 	}
 
@@ -564,7 +667,7 @@ public class ServerProducer extends ChannelDuplexHandler // ChannelInboundHandle
 	 */
 
 	@Override
-	public void actorSendmessage(String actorId, Object eventObj) {
+	public void actorSendmessage(String actorId, Object eventObj,List<String> targetaddr) {
 		//20200215
 		log.debug("actorSendmessage actorId {} sessionList size={} ", actorId, sessionList.size());
 		log.debug("actorSendmessage brnoaddrGrp={} ", this.brnoaddrGrp);
@@ -574,12 +677,15 @@ public class ServerProducer extends ChannelDuplexHandler // ChannelInboundHandle
 			result.readBytes(result1);
 			//20200215
 			String rmtaddr = "";
-			List<String> targetaddr = null;
-			if (!actorId.equals("999"))
-				targetaddr = this.brnoaddrGrp.get(actorId);
+			
+//				targetaddr = this.brnoaddrGrp.get(actorId);
 			//----
 			for (ChannelHandlerContext curctx : sessionList) {
-				rmtaddr = ((InetSocketAddress) curctx.channel().remoteAddress()).getAddress().getHostAddress().trim();
+//				rmtaddr = ((InetSocketAddress) curctx.channel().remoteAddress()).getAddress().getHostAddress().trim();
+				String socketChannel = curctx.channel().toString();
+				int start = socketChannel.lastIndexOf("R:/") + 3;
+				int end = socketChannel.lastIndexOf(":");
+				rmtaddr = socketChannel.substring(start, end);
 				log.debug("bordaddr={} brno {}", rmtaddr, actorId);
 				if (curctx != null) {
 					if (actorId.equals("999") || targetaddr != null && targetaddr.contains(rmtaddr))
