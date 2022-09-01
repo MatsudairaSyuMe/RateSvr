@@ -288,11 +288,15 @@ public class S004 {
 		for (int index = 7; index >= 3; index--)
 			if (b[index] != (byte) '0') {
 				decimalno1 = 8 - index;
+				int firstbzero = 3; //20220831
 				msg = new String(b, 0, index + 1).trim();
-				if (b[0] == (byte) '0')
+				if (b[0] == (byte) '0') {
 					msg = new String(b, 1, index).trim();
+					firstbzero = 2; //20220831
+				}
 				byte[] b2 = msg.getBytes();
-				String hdr = new String(b2, 0, 2);
+				String hdr = new String(b2, 0, firstbzero);  //20220831
+				//String hdr = new String(b2, 0, 2);
 				switch (decimalno1) {
 				case 1:
 					hdr = String.format("%1d", Integer.valueOf(hdr));
@@ -312,7 +316,10 @@ public class S004 {
 				default:
 					break;
 				}
-				String bdy = new String(b2, 2, msg.length() - 2);
+				//20220831
+				String bdy = new String(b2, firstbzero, msg.length() - firstbzero);
+				//String bdy = new String(b2, 2, msg.length() - 2);
+				//20220831
 				msg = hdr + bdy;
 				break;
 			}
@@ -334,8 +341,14 @@ public class S004 {
 							break;
 						}
 					}
-					if (s >= 0 && e == -1)
-						l = 1;
+					if (s >= 0 && e == -1) { //20220831
+						if (s == 0)
+							l = 3;
+						else if (s == 1)
+							l = 2;
+						else
+							l = 1;
+					} //----
 				} else {
 					if (s >= 0)
 						l = 1;
@@ -379,11 +392,25 @@ public class S004 {
 	private String adjustField(String src, int adjust) {
 		byte[] b = src.getBytes();
 		if (adjust > 0) {
-			src = new String(b, adjust, b.length - adjust);
-			for (int i = 0; i < adjust; i++)
-				src = src + "0";
+			//20220831
+			//integer digit to large 3 bdigit can't adjust to left
+			if (b.length >= 6 && (b[0] != (byte)' ') && (b[0] != (byte)'0')) {
+				src = "      ";
+			} else {
+			//----
+            	src = new String(b, adjust, b.length - adjust);
+            	for (int i = 0; i < adjust; i++)
+            		src = src + "0";
+            }
 //          System.out.println(" [" + src + "] <==new");
-			}
+		}
+		//20220831
+		if (b.length >= 6 && adjust < 0) {
+			byte[] ssrc = "      ".getBytes();  //integer digit to large 3 bdigit can't adjust to left
+			System.arraycopy(b, 0, ssrc, (-1 * adjust), (6 - (-1 * adjust)));
+			src = new String (ssrc, 0, 6);
+		}
+		//----
 		return src;
 	}
 	//----
