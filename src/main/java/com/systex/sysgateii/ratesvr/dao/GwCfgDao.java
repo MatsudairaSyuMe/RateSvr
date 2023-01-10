@@ -73,7 +73,7 @@ public class GwCfgDao {
 				foo = i.next();
 //				log.info("Resource ==>{}", foo);
 				setSelurl(foo.attribute("url").getStringValue());
-				setSelpass(foo.attribute("password").getStringValue());
+				setSelpass(foo.attribute("using").getStringValue()); //20230110 change from password to using
 				setSeluser(foo.attribute("username").getStringValue());
 			}
 			Parameters params = new Parameters();

@@ -3,7 +3,7 @@
 	
 <Resource name="jdbc/BIS_DB"
 		url="jdbc:db2://10.1.6.220:50100/BISDB" username="BISAP"
-		password="P@ssw0rd" auth="Container" type="javax.sql.DataSource"
+		using="P@ssw0rd" auth="Container" type="javax.sql.DataSource"
 		maxActive="8" maxIdle="2" maxWait="-1" />
 	<system>
 		<ip>192.168.30.59</ip>
