@@ -4,7 +4,7 @@
   <!-- 第二行(url、username)、第三行(password)，保留相對位置，重新定義才能成功  2022.06.27-->
 <Resource name="jdbc/BIS_DB"
           url="jdbc:db2://10.1.6.220:50103/BISDB" username="BISUSER"
-          password="Bot123456"  auth="Container" type="javax.sql.DataSource"
+          using="Bot123456"  auth="Container" type="javax.sql.DataSource"
           maxActive="8" maxIdle="2" maxWait="-1" />
   <!-- ip(0.0.0.0)表示不限定來源ip                                              2022.06.27-->
   <!-- bin/ratesvr start從/Mon/autosvr.scr根據hostname重新定義auid              2022.06.27-->
