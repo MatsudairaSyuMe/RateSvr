@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-	
+  <!-- bin/ratesvr start從/Mon/autosvr.scr根據hostname重新定義資源標籤內的參數  2022.06.27-->
+  <!-- 第二行(url、username)、第三行(password)，保留相對位置，重新定義才能成功  2022.06.27-->
 <Resource name="jdbc/BIS_DB"
-		url="jdbc:db2://10.1.6.220:50100/BISDB" username="BISAP"
-		using="P@ssw0rd" auth="Container" type="javax.sql.DataSource"
-		maxActive="8" maxIdle="2" maxWait="-1" />
-	<system>
-		<ip>192.168.30.59</ip>
-		<port>12000</port>
-		<logpath>/gwlog/ratesvr</logpath>
-		<user>scotthong</user>
-	</system>
-	<!-- <svrsubport>
-		<svrip>192.168.14.91</svrip>
-		<svrport>15000</svrport>
-		<localip>192.168.14.129</localip>
-		<localport>15331</localport>
-		<verhbrno>983</verhbrno>
-		<verhwsno>80</verhwsno>
-	</svrsubport> -->
+          url="jdbc:db2://10.1.6.220:50103/BISDB" username="BISUSER"
+          password="Bot123456"  auth="Container" type="javax.sql.DataSource"
+          maxActive="8" maxIdle="2" maxWait="-1" />
+  <!-- ip(0.0.0.0)表示不限定來源ip                                              2022.06.27-->
+  <!-- bin/ratesvr start從/Mon/autosvr.scr根據hostname重新定義auid              2022.06.27-->
+  <system>
+    <ip>0.0.0.0</ip>
+    <port>12000</port>
+    <logpath>/log/bis/ratesvr</logpath>
+    <auid>90351</auid>
+  </system>
 </configuration>
+  <!-- 註解下方有多留一行空白行，避免判斷XML定義檔結尾符號時，最後一行消失      2022.06.27-->
+
+
+
+
