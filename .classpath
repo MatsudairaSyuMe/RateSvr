@@ -53,5 +53,6 @@
 	<classpathentry kind="lib" path="libs/netty-all-4.1.33.Final.jar"/>
 	<classpathentry kind="lib" path="libs/slf4j-api-1.7.26.jar"/>
 	<classpathentry kind="lib" path="libs/slf4j-api-1.7.26-sources.jar"/>
+	<classpathentry kind="lib" path="libs/esapi-2.2.3.1.jar"/>
 	<classpathentry kind="output" path="bin/default"/>
 </classpath>

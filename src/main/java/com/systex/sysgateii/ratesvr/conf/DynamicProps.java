@@ -169,7 +169,7 @@ public class DynamicProps {
 			svrport = ipPort.split("=")[0].split(":")[1];
 			localip = ipPort.split("=")[1].split(":")[0];
 			localport = ipPort.split("=")[1].split(":")[1];
-			log.info("DB DATA svrsubport.svrip={}",surip);
+			log.info("DB DATA svrsubport.svrip={}",LogUtil.vaildLog(surip)); //20230113 chsange to use LogUtil.vaildLog
 			log.info("DB DATA svrsubport.svrport={}",LogUtil.vaildLog(svrport));
 			log.info("DB DATA svrsubport.localip={}",LogUtil.vaildLog(localip));
 			log.info("DB DATA svrsubport.localport={}",LogUtil.vaildLog(localport));
