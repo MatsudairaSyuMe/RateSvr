@@ -629,6 +629,16 @@ public class ServerProducer extends ChannelDuplexHandler // ChannelInboundHandle
 			log.debug("serverId=[{}] userEventTriggered [{}]", serverId, sndStr);
 			writeMessageWithContext(ctx, sndStr, CharsetUtil.UTF_8); //20220718 writeMessage change to use writeMessageWithContext
 			//----
+			//20230406 update the TB_AUDEVSTS status for connect status
+			if(clientIP !=null) {
+				try {
+					GwCfgDao GwCfgDao = new GwCfgDao();
+					GwCfgDao.UPDATETB_AUDEVSTS(clientIP, "2");
+				} catch (Throwable e1) {
+					e1.printStackTrace();
+				}
+			}
+			//20230406 end
 			publishInactiveEvent();
 			//ctx.close();
 		}
@@ -688,8 +698,19 @@ public class ServerProducer extends ChannelDuplexHandler // ChannelInboundHandle
 				rmtaddr = socketChannel.substring(start, end);
 				log.debug("bordaddr={} brno {}", rmtaddr, actorId);
 				if (curctx != null) {
-					if (actorId.equals("999") || targetaddr != null && targetaddr.contains(rmtaddr))
+					if (actorId.equals("999") || targetaddr != null && targetaddr.contains(rmtaddr)) {
 						writeMessageWithContext(curctx, new String(result1), CharsetUtil.UTF_8);
+						//20230406 update the TB_AUDEVSTS status for connect status
+						if(rmtaddr !=null) {
+							try {
+								GwCfgDao GwCfgDao = new GwCfgDao();
+								GwCfgDao.UPDATETB_AUDEVSTS(rmtaddr, "2");
+							} catch (Throwable e) {
+								e.printStackTrace();
+							}
+						}
+						//20230406 end
+					}
 				}
 			}
 			result1 = null;
