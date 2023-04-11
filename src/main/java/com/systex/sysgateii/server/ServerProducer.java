@@ -263,6 +263,10 @@ public class ServerProducer extends ChannelDuplexHandler // ChannelInboundHandle
 								ch.close();
 								return;
 							}
+							//20230411 MatsudairaSyuMe check if this IP has any previous connection?
+							if (isAlreadyConnectedIp(clientIp))
+								log.debug("close previous connected session from [{}]",clientIp);							
+							//20230411 MatsudairaSyuMe
 
 							// Do not call await() inside ChannelHandler
 							//ch.pipeline().addLast("idleStateHandler", new IdleStateHandler(keepAlive, 0,
@@ -731,5 +735,34 @@ public class ServerProducer extends ChannelDuplexHandler // ChannelInboundHandle
 		log.debug(serverId + " publish Inactive event to listener");
 		log.debug("-publish end-");
 	}
+
+
+	//20230411 MatsudairaSyuMe close previous connection on same IP for making sure only one session of one ip
+	/**
+	 * 以檢查 client ip 是否仍然連接<br/>
+	 *
+	 * @param ip client ip
+	 * @return true=連接, false=未曾連接
+	 */
+	public boolean isAlreadyConnectedIp(String ip) {
+		log.debug("sessionList check {}", ip);
+		if (sessionList != null && sessionList.size() > 0 && StrUtil.isNotEmpty(ip)) {
+			for (ChannelHandlerContext curctx : sessionList) {
+				String socketChannel = curctx.channel().toString();
+				int start = socketChannel.lastIndexOf("R:/") + 3;
+				int end = socketChannel.lastIndexOf(":");
+				String rmtaddr = socketChannel.substring(start, end);
+				log.debug("rmtaddr={} ip={}", rmtaddr, ip);
+				if (StrUtil.isNotEmpty(rmtaddr) && ip.startsWith(rmtaddr)) {
+					log.info("sessionList{} ==> check {} in sessionList close previous session", rmtaddr, ip);
+					curctx.close();
+					sessionList.remove(curctx);
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	//20230411 end MatsudairaSyuMe close previous connection on same IP for making sure only one session of one ip
 
 }
